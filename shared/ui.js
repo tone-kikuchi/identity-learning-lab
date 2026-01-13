@@ -3,7 +3,7 @@ import { appendLog, resetDemo, getJson, getDemoFromLocation, resolveDemo, setLas
 
 export function buildUrl(path, { basePath = '.', demo } = {}) {
   const normalizedBasePath = basePath.endsWith('/') ? basePath.slice(0, -1) : basePath;
-  const resolvedBasePath = normalizedBasePath || '.';
+  const resolvedBasePath = normalizedBasePath.replace(/^\//, '') || '.';
   const normalizedPath = path.startsWith('/') ? path.slice(1) : path;
   const url = `${resolvedBasePath}/${normalizedPath}`;
   if (!demo) {
