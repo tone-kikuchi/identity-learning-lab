@@ -15,16 +15,7 @@
         <button class="button danger" id="logoutButton">ログアウト</button>
         <a class="button secondary" href="./index.html">SPホームへ戻る</a>
       </div>
-      <div class="card">
-        <h2>今回のフローまとめ</h2>
-        <ol>
-          <li>SPがログイン開始</li>
-          <li>IdPでユーザー認証</li>
-          <li>IdPがアサーションを生成</li>
-          <li>SPのACSで検証</li>
-          <li>SPセッション作成</li>
-        </ol>
-      </div>
+      <div class="card" id="flowSummary"></div>
     </main>
     <script type="module">
       import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '../shared/ui.js';
@@ -61,6 +52,31 @@
         window.location.href = './index.html';
       });
 
+      const summary = document.getElementById('flowSummary');
+      if (app?.mode === 'oidc_like') {
+        summary.innerHTML = `
+          <h2>今回のフローまとめ (OIDC-like)</h2>
+          <ol>
+            <li>SPがログイン開始</li>
+            <li>IdPでユーザー認証</li>
+            <li>IdPが認可コードを発行</li>
+            <li>SPがcallbackで検証</li>
+            <li>SPセッション作成</li>
+          </ol>
+        `;
+      } else {
+        summary.innerHTML = `
+          <h2>今回のフローまとめ (SAML-like)</h2>
+          <ol>
+            <li>SPがログイン開始</li>
+            <li>IdPでユーザー認証</li>
+            <li>IdPがアサーションを生成</li>
+            <li>SPのACSで検証</li>
+            <li>SPセッション作成</li>
+          </ol>
+        `;
+      }
+
       const panel = renderLearningPanel({
         purpose: 'ログイン成功後のみ表示される保護ページ。',
         params: { appId },
@@ -69,7 +85,7 @@
         storageSnapshot: snapshotStorage(),
         logs: snapshotStorage().eventLog
       });
-      const stepBar = renderStepBar('saml', 5);
+      const stepBar = renderStepBar(app?.mode === 'oidc_like' ? 'oidc' : 'saml', 5);
       document.querySelector('main').insertBefore(stepBar, document.querySelector('main').children[2]);
       document.querySelector('main').appendChild(panel);
     </script>

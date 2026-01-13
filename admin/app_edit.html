@@ -8,9 +8,10 @@
   </head>
   <body>
     <main>
-      <h1>SAML-like アプリ設定</h1>
-      <p class="muted">SAMLのAudience/Recipient相当を学習用に編集します。</p>
-      <form class="card form-grid" id="appForm">
+      <h1>アプリ設定</h1>
+      <p class="muted">SAML-like / OIDC-like の設定を学習用に編集します。</p>
+      <form class="card form-grid" id="samlForm">
+        <h2>SAML-like 設定</h2>
         <label>
           Name
           <input type="text" name="name" required />
@@ -30,50 +31,120 @@
           <input type="text" name="sharedSecret" required />
           <small class="muted">証明書代わりの共有鍵（学習用）</small>
         </label>
-        <button class="button" type="submit">保存</button>
+        <button class="button" type="submit">SAML設定を保存</button>
+      </form>
+      <form class="card form-grid" id="oidcForm">
+        <h2>OIDC-like 設定</h2>
+        <label>
+          Name
+          <input type="text" name="name" required />
+        </label>
+        <label>
+          Client ID
+          <input type="text" name="clientId" required />
+          <small class="muted">OIDCのclient_id相当</small>
+        </label>
+        <label>
+          Redirect URI
+          <input type="text" name="redirectUri" required />
+          <small class="muted">相対パスで指定 (例: ../sp/callback.html)</small>
+        </label>
+        <button class="button" type="submit">OIDC設定を保存</button>
       </form>
       <a class="button secondary" href="./index.html">戻る</a>
     </main>
     <script type="module">
       import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '../shared/ui.js';
       import { getJson, setJson, resetAll, appendLog } from '../shared/storage.js';
+      import { randomId } from '../shared/crypto.js';
 
       renderHeader({ activeRole: 'admin', basePath: '..' });
       if (!getJson('mockidp.apps')) {
         resetAll();
       }
 
-      const [app] = getJson('mockidp.apps', []);
-      const form = document.getElementById('appForm');
-      form.name.value = app?.name || '';
-      form.spEntityId.value = app?.spEntityId || '';
-      form.acsUrl.value = app?.acsUrl || '../sp/acs_receive.html';
-      form.sharedSecret.value = app?.sharedSecret || 'dev-secret-change-me';
+      const apps = getJson('mockidp.apps', []);
+      const samlApp = apps.find((item) => item.mode === 'saml_like') || {
+        id: randomId('app_saml'),
+        name: 'Sample SAML App',
+        mode: 'saml_like',
+        spEntityId: 'sp.sample',
+        acsUrl: '../sp/acs_receive.html',
+        sharedSecret: 'dev-secret-change-me'
+      };
+      const oidcApp = apps.find((item) => item.mode === 'oidc_like') || {
+        id: randomId('app_oidc'),
+        name: 'Sample OIDC App',
+        mode: 'oidc_like',
+        clientId: 'client_demo',
+        redirectUri: '../sp/callback.html'
+      };
 
-      form.addEventListener('submit', (event) => {
+      const samlForm = document.getElementById('samlForm');
+      samlForm.name.value = samlApp.name || '';
+      samlForm.spEntityId.value = samlApp.spEntityId || '';
+      samlForm.acsUrl.value = samlApp.acsUrl || '../sp/acs_receive.html';
+      samlForm.sharedSecret.value = samlApp.sharedSecret || 'dev-secret-change-me';
+
+      const oidcForm = document.getElementById('oidcForm');
+      oidcForm.name.value = oidcApp.name || '';
+      oidcForm.clientId.value = oidcApp.clientId || '';
+      oidcForm.redirectUri.value = oidcApp.redirectUri || '../sp/callback.html';
+
+      const upsertApp = (updated) => {
+        const existing = getJson('mockidp.apps', []);
+        const next = [...existing];
+        const idIndex = next.findIndex((item) => item.id === updated.id);
+        if (idIndex >= 0) {
+          next[idIndex] = updated;
+        } else {
+          const modeIndex = next.findIndex((item) => item.mode === updated.mode);
+          if (modeIndex >= 0) {
+            next[modeIndex] = updated;
+          } else {
+            next.push(updated);
+          }
+        }
+        setJson('mockidp.apps', next);
+      };
+
+      samlForm.addEventListener('submit', (event) => {
         event.preventDefault();
         const updated = {
-          ...app,
-          name: form.name.value,
-          spEntityId: form.spEntityId.value,
-          acsUrl: form.acsUrl.value,
-          sharedSecret: form.sharedSecret.value
+          ...samlApp,
+          name: samlForm.name.value,
+          spEntityId: samlForm.spEntityId.value,
+          acsUrl: samlForm.acsUrl.value,
+          sharedSecret: samlForm.sharedSecret.value
         };
-        setJson('mockidp.apps', [updated]);
+        upsertApp(updated);
+        appendLog({ actor: 'admin', action: 'update', detail: `update app ${updated.name}` });
+        window.location.href = './index.html';
+      });
+
+      oidcForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const updated = {
+          ...oidcApp,
+          name: oidcForm.name.value,
+          clientId: oidcForm.clientId.value,
+          redirectUri: oidcForm.redirectUri.value
+        };
+        upsertApp(updated);
         appendLog({ actor: 'admin', action: 'update', detail: `update app ${updated.name}` });
         window.location.href = './index.html';
       });
 
       const panel = renderLearningPanel({
-        purpose: 'SAML-likeのAudience/Recipient/共有鍵を管理するフォーム。',
+        purpose: 'SAML-likeとOIDC-likeの設定値を管理するフォーム。',
         params: {},
-        generated: { app },
+        generated: { samlApp, oidcApp },
         validation: [],
         storageSnapshot: snapshotStorage(),
         logs: snapshotStorage().eventLog
       });
       const stepBar = renderStepBar('saml', 0);
-      document.querySelector('main').insertBefore(stepBar, form);
+      document.querySelector('main').insertBefore(stepBar, samlForm);
       document.querySelector('main').appendChild(panel);
     </script>
   </body>
