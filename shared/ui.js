@@ -66,14 +66,17 @@ export function renderLearningPanel({
       <div class="section">
         <h3>入力パラメータ</h3>
         <pre>${formatJson(params)}</pre>
+        <div>${formatParameterGuide(params)}</div>
       </div>
       <div class="section">
         <h3>生成物</h3>
         <pre>${formatJson(generated)}</pre>
+        <div>${formatParameterGuide(generated)}</div>
       </div>
       <div class="section">
         <h3>検証結果</h3>
         <div>${formatValidation(validation)}</div>
+        <div>${formatValidationGuide(validation)}</div>
       </div>
       <div class="section">
         <h3>ストレージスナップショット</h3>
@@ -88,11 +91,115 @@ export function renderLearningPanel({
   return panel;
 }
 
+const PARAMETER_DESCRIPTIONS = {
+  appId: 'Adminで設定したアプリID。',
+  acs: 'SP側のACS(Assertion Consumer Service) URL。レスポンス送信先。',
+  spEntityId: 'SPのエンティティID。audience検証の対象。',
+  requestId: 'SPが発行したリクエストID。inResponseToで一致確認する。',
+  relayState: 'リクエストとレスポンスで引き回す状態値。',
+  SAMLResponse: 'IdPが生成したSAMLResponse相当のBase64文字列。',
+  RelayState: 'SAMLResponseに付随して返す状態値。',
+  expected: 'SP側で保存した期待値。',
+  received: 'ACSで受信したPOST内容。',
+  'expected.requestId': '期待しているリクエストID。',
+  'expected.relayState': '送信時に保存したRelayState。',
+  'expected.receivedRelayState': '受信したRelayState。',
+  'received.SAMLResponse': '受信したSAMLResponse(Base64)。',
+  'received.RelayState': '受信したRelayState。',
+  'received.appId': '受信したアプリID。',
+  iss: '発行者(issuer)の識別子。ここではIdPを示す。',
+  aud: 'Audience(宛先SP)の識別子。',
+  recipient: 'レスポンスの送信先(ACS URL)。',
+  inResponseTo: '対応するAuthnRequestのID。',
+  iat: '発行時刻(UNIX秒)。',
+  exp: '有効期限(UNIX秒)。現在時刻より後かを確認。',
+  subject: 'ユーザ属性の集合。',
+  'subject.userId': 'ユーザID。',
+  'subject.username': 'ログイン名。',
+  'subject.displayName': '表示名。',
+  'subject.groups': '所属グループ。',
+  sig: 'HMAC署名。改ざん検知のために検証する。',
+  user: 'IdPでログイン済みのユーザ情報。',
+  'user.id': 'ユーザID。',
+  'user.username': 'ログイン名。',
+  'user.displayName': '表示名。',
+  'user.groups': '所属グループ。'
+};
+
+const VALIDATION_DESCRIPTIONS = {
+  'SAMLResponse present': 'SAMLResponseが送信されているかを確認。',
+  'SAMLResponse decode': 'Base64デコードとJSONパースに成功するかを確認。',
+  RelayState一致: '送信時に保存したRelayStateと受信値が一致するかを確認。',
+  inResponseTo一致: 'レスポンスが想定リクエストIDに紐づくかを確認。',
+  aud一致: 'AudienceがSPのエンティティIDと一致するかを確認。',
+  recipient一致: 'レスポンス送信先(ACS URL)が一致するかを確認。',
+  exp未期限切れ: '有効期限(exp)が現在時刻より後かを確認。',
+  sig検証: '共有シークレットで署名(HMAC)が一致するかを確認。'
+};
+
 function formatJson(value) {
   if (!value) {
     return '—';
   }
   return JSON.stringify(value, null, 2);
+}
+
+function formatParameterGuide(values) {
+  const entries = flattenKeys(values);
+  if (entries.length === 0) {
+    return '<span class="muted">—</span>';
+  }
+  const unique = Array.from(new Set(entries));
+  return `
+    <dl class="definition-list">
+      ${unique
+        .map((path) => {
+          const description = PARAMETER_DESCRIPTIONS[path] || PARAMETER_DESCRIPTIONS[path.split('.').pop()];
+          return `
+            <div>
+              <dt>${path}</dt>
+              <dd>${description || '説明未登録'}</dd>
+            </div>
+          `;
+        })
+        .join('')}
+    </dl>
+  `;
+}
+
+function formatValidationGuide(validation = []) {
+  if (!validation || validation.length === 0) {
+    return '<span class="muted">—</span>';
+  }
+  const unique = Array.from(new Set(validation.map((item) => item.name)));
+  return `
+    <dl class="definition-list">
+      ${unique
+        .map((name) => {
+          const description = VALIDATION_DESCRIPTIONS[name];
+          return `
+            <div>
+              <dt>${name}</dt>
+              <dd>${description || '説明未登録'}</dd>
+            </div>
+          `;
+        })
+        .join('')}
+    </dl>
+  `;
+}
+
+function flattenKeys(value, prefix = '') {
+  if (!value || typeof value !== 'object') {
+    return [];
+  }
+  return Object.entries(value).flatMap(([key, item]) => {
+    const path = prefix ? `${prefix}.${key}` : key;
+    if (item && typeof item === 'object' && !Array.isArray(item)) {
+      return [path, ...flattenKeys(item, path)];
+    }
+    return [path];
+  });
 }
 
 function formatValidation(validation = []) {
