@@ -17,6 +17,19 @@ export function getDemoFromLocation(location = window.location) {
   return normalizeDemo(params.get('demo'));
 }
 
+export function resolveDemoSelection({ location = window.location, storage = window.localStorage, fallback = 'saml' } = {}) {
+  const params = new URLSearchParams(location.search);
+  const rawDemo = params.get('demo');
+  if (rawDemo !== null) {
+    return { demo: normalizeDemo(rawDemo), rawDemo, source: 'query' };
+  }
+  const lastDemo = getLastDemo(storage);
+  if (lastDemo) {
+    return { demo: lastDemo, rawDemo: null, source: 'last' };
+  }
+  return { demo: normalizeDemo(fallback), rawDemo: null, source: 'default' };
+}
+
 export function getLastDemo(storage = window.localStorage) {
   if (!storage) {
     return null;
@@ -151,16 +164,16 @@ function applyDefaultAppValues(demo, apps) {
     }
     const nextApp = {
       ...app,
-      id: app.id || defaults.id,
-      name: app.name || defaults.name
+      id: app.id ?? defaults.id,
+      name: app.name ?? defaults.name
     };
     if (defaults.mode === 'saml_like') {
-      nextApp.spEntityId = app.spEntityId || defaults.spEntityId;
-      nextApp.acsUrl = app.acsUrl || defaults.acsUrl;
-      nextApp.sharedSecret = app.sharedSecret || defaults.sharedSecret;
+      nextApp.spEntityId = app.spEntityId ?? defaults.spEntityId;
+      nextApp.acsUrl = app.acsUrl ?? defaults.acsUrl;
+      nextApp.sharedSecret = app.sharedSecret ?? defaults.sharedSecret;
     } else {
-      nextApp.clientId = app.clientId || defaults.clientId;
-      nextApp.redirectUri = app.redirectUri || defaults.redirectUri;
+      nextApp.clientId = app.clientId ?? defaults.clientId;
+      nextApp.redirectUri = app.redirectUri ?? defaults.redirectUri;
     }
     if (JSON.stringify(nextApp) !== JSON.stringify(app)) {
       updated = true;

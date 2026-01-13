@@ -241,6 +241,18 @@ label {
   color: #7a4a00;
 }
 
+.notice.success {
+  background: rgba(26, 143, 90, 0.12);
+  border-color: rgba(26, 143, 90, 0.3);
+  color: var(--success);
+}
+
+.notice.error {
+  background: rgba(204, 59, 59, 0.12);
+  border-color: rgba(204, 59, 59, 0.3);
+  color: var(--danger);
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;
