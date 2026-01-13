@@ -1,8 +1,17 @@
 # Identity Learning Lab
 
+Identity Learning Lab は、Identity Provider (IdP) と Service Provider (SP) のフロー、共有アセット、管理ユーティリティを試すためのサンドボックスリポジトリです。IdP/SP の例を分離しつつ、共通モジュールは可能な限り共有する構成にしています。
+
 Identity Learning Lab is a sandbox repository for experimenting with Identity Provider (IdP) and Service Provider (SP) flows, shared assets, and admin utilities. The project is organized to keep IdP/SP examples separate while sharing common modules when possible.
 
 ## Repository layout
+
+- `admin/` — 管理ユーティリティとツール。
+- `assets/` — デモやドキュメントで使用する静的アセット。
+- `idp/` — Identity Provider のサンプル実装。
+- `shared/` — 共有モジュールとユーティリティ。
+- `sp/` — Service Provider のサンプル実装。
+- `index.html` — ローカルデモのトップレベルのランディングページ。
 
 - `admin/` — admin utilities and tooling.
 - `assets/` — static assets used by demos or documentation.
@@ -13,14 +22,22 @@ Identity Learning Lab is a sandbox repository for experimenting with Identity Pr
 
 ## Getting started
 
+1. 探したいサブプロジェクト（例: `idp/` または `sp/`）を確認します。
+2. そのディレクトリ内の README などのドキュメントに従ってください。
+
 1. Review the subproject you want to explore (for example `idp/` or `sp/`).
 2. Follow any local README or documentation inside that directory.
 
 ## Contributing
 
+- 構成やワークフローに変更がある場合はドキュメントを更新してください。
+- 新しい挙動を追加する場合はサブプロジェクト内の README を追加・更新してください。
+
 - Keep documentation up to date with any structural or workflow changes.
 - Add or update README files inside subprojects when introducing new behavior.
 
 ## License
+
+このリポジトリには現在ライセンスが定義されていません。オープンソース化する場合はライセンスファイルを追加してください。
 
 This repository does not currently declare a license. Add a license file if you intend to open source it.
