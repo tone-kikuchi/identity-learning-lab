@@ -24,90 +24,95 @@
         resetAll();
       }
 
-      const expected = JSON.parse(sessionStorage.getItem('mockidp.expected') || '{}');
-      const received = JSON.parse(sessionStorage.getItem('mockidp.received') || '{}');
-      const appId = expected.appId || received.appId;
-      const [app] = getJson('mockidp.apps', []).filter((item) => item.id === appId);
-
       const inputCard = document.getElementById('inputCard');
-      inputCard.innerHTML = `
-        <h2>入力（POST body相当）</h2>
-        <pre>${JSON.stringify(received, null, 2)}</pre>
-      `;
+      const payloadCard = document.getElementById('payloadCard');
+      const resultCard = document.getElementById('resultCard');
 
-      const expectedState = {
-        requestId: expected.requestId,
-        relayState: expected.relayState,
-        receivedRelayState: received.RelayState
+      const runValidation = async () => {
+        const expected = JSON.parse(sessionStorage.getItem('mockidp.expected') || '{}');
+        const received = JSON.parse(sessionStorage.getItem('mockidp.received') || '{}');
+        const appId = expected.appId || received.appId;
+        const [app] = getJson('mockidp.apps', []).filter((item) => item.id === appId);
+
+        inputCard.innerHTML = `
+          <h2>入力（POST body相当）</h2>
+          <pre>${JSON.stringify(received, null, 2)}</pre>
+        `;
+
+        const expectedState = {
+          requestId: expected.requestId,
+          relayState: expected.relayState,
+          receivedRelayState: received.RelayState
+        };
+
+        if (!app) {
+          payloadCard.innerHTML = `
+            <h2>decode結果（payload）</h2>
+            <p class="notice">アプリ設定が見つかりません。Adminで設定を確認してください。</p>
+          `;
+          resultCard.innerHTML = `
+            <h2>検証チェックリスト</h2>
+            <p class="notice">アプリ設定がないため検証できません。</p>
+            <a class="button secondary" href="../admin/index.html">Adminへ戻る</a>
+          `;
+          appendLog({ actor: 'sp', action: 'validation_failed', detail: 'app not found' });
+          return;
+        }
+
+        const result = await verifySamlLikeResponse({
+          app,
+          expected: expectedState,
+          b64: received.SAMLResponse
+        });
+
+        payloadCard.innerHTML = `
+          <h2>decode結果（payload）</h2>
+          <pre>${result.payload ? JSON.stringify(result.payload, null, 2) : '—'}</pre>
+        `;
+
+        resultCard.innerHTML = `
+          <h2>検証チェックリスト</h2>
+          <div>${result.checks
+            .map((check) => {
+              return `<div><span class="badge ${check.ok ? 'success' : 'fail'}">${check.ok ? 'OK' : 'NG'}</span> <strong>${check.name}</strong> <span class="muted">${check.detail || ''}</span></div>`;
+            })
+            .join('')}</div>
+        `;
+
+        if (result.ok && app && result.payload?.subject) {
+          const sessions = getJson('mockidp.spSessions', {});
+          sessions[app.id] = {
+            ...result.payload.subject,
+            loginAt: new Date().toISOString()
+          };
+          setJson('mockidp.spSessions', sessions);
+          appendLog({ actor: 'sp', action: 'session_created', detail: `user=${result.payload.subject.username}` });
+          resultCard.innerHTML += `
+            <p class="notice">検証成功。セッションを作成しました。</p>
+            <a class="button" href="./app.html?appId=${app.id}">保護ページへ進む</a>
+          `;
+        } else {
+          appendLog({ actor: 'sp', action: 'validation_failed', detail: 'ACS validation failed' });
+          resultCard.innerHTML += `
+            <p class="notice">検証に失敗しました。戻ってやり直してください。</p>
+            <a class="button secondary" href="./login_saml.html?appId=${appId || ''}">ログイン開始へ戻る</a>
+          `;
+        }
+
+        const panel = renderLearningPanel({
+          purpose: 'IdPから受け取ったSAMLResponseを検証し、OKならSPセッションを作成する。',
+          params: { expected: expectedState, received },
+          generated: result.payload,
+          validation: result.checks,
+          storageSnapshot: snapshotStorage(),
+          logs: snapshotStorage().eventLog
+        });
+        const stepBar = renderStepBar('saml', 4);
+        document.querySelector('main').insertBefore(stepBar, inputCard);
+        document.querySelector('main').appendChild(panel);
       };
 
-      if (!app) {
-        document.getElementById('payloadCard').innerHTML = `
-          <h2>decode結果（payload）</h2>
-          <p class="notice">アプリ設定が見つかりません。Adminで設定を確認してください。</p>
-        `;
-        document.getElementById('resultCard').innerHTML = `
-          <h2>検証チェックリスト</h2>
-          <p class="notice">アプリ設定がないため検証できません。</p>
-          <a class="button secondary" href="../admin/index.html">Adminへ戻る</a>
-        `;
-        appendLog({ actor: 'sp', action: 'validation_failed', detail: 'app not found' });
-        return;
-      }
-
-      const result = await verifySamlLikeResponse({
-        app,
-        expected: expectedState,
-        b64: received.SAMLResponse
-      });
-
-      const payloadCard = document.getElementById('payloadCard');
-      payloadCard.innerHTML = `
-        <h2>decode結果（payload）</h2>
-        <pre>${result.payload ? JSON.stringify(result.payload, null, 2) : '—'}</pre>
-      `;
-
-      const resultCard = document.getElementById('resultCard');
-      resultCard.innerHTML = `
-        <h2>検証チェックリスト</h2>
-        <div>${result.checks
-          .map((check) => {
-            return `<div><span class="badge ${check.ok ? 'success' : 'fail'}">${check.ok ? 'OK' : 'NG'}</span> <strong>${check.name}</strong> <span class="muted">${check.detail || ''}</span></div>`;
-          })
-          .join('')}</div>
-      `;
-
-      if (result.ok && app && result.payload?.subject) {
-        const sessions = getJson('mockidp.spSessions', {});
-        sessions[app.id] = {
-          ...result.payload.subject,
-          loginAt: new Date().toISOString()
-        };
-        setJson('mockidp.spSessions', sessions);
-        appendLog({ actor: 'sp', action: 'session_created', detail: `user=${result.payload.subject.username}` });
-        resultCard.innerHTML += `
-          <p class="notice">検証成功。セッションを作成しました。</p>
-          <a class="button" href="./app.html?appId=${app.id}">保護ページへ進む</a>
-        `;
-      } else {
-        appendLog({ actor: 'sp', action: 'validation_failed', detail: 'ACS validation failed' });
-        resultCard.innerHTML += `
-          <p class="notice">検証に失敗しました。戻ってやり直してください。</p>
-          <a class="button secondary" href="./login_saml.html?appId=${appId || ''}">ログイン開始へ戻る</a>
-        `;
-      }
-
-      const panel = renderLearningPanel({
-        purpose: 'IdPから受け取ったSAMLResponseを検証し、OKならSPセッションを作成する。',
-        params: { expected: expectedState, received },
-        generated: result.payload,
-        validation: result.checks,
-        storageSnapshot: snapshotStorage(),
-        logs: snapshotStorage().eventLog
-      });
-      const stepBar = renderStepBar('saml', 4);
-      document.querySelector('main').insertBefore(stepBar, inputCard);
-      document.querySelector('main').appendChild(panel);
+      runValidation();
     </script>
   </body>
 </html>
