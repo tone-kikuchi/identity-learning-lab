@@ -2,6 +2,7 @@ import { seedOidcDemo, seedSamlDemo } from './sample_data.js';
 
 const MAX_LOGS = 200;
 const DEMO_KEYS = new Set(['saml', 'oidc']);
+const LAST_DEMO_KEY = 'mockidp.lastDemo';
 
 export function normalizeDemo(demo) {
   if (!demo) {
@@ -14,6 +15,33 @@ export function normalizeDemo(demo) {
 export function getDemoFromLocation(location = window.location) {
   const params = new URLSearchParams(location.search);
   return normalizeDemo(params.get('demo'));
+}
+
+export function getLastDemo(storage = window.localStorage) {
+  if (!storage) {
+    return null;
+  }
+  return normalizeDemo(storage.getItem(LAST_DEMO_KEY));
+}
+
+export function setLastDemo(demo, storage = window.localStorage) {
+  const normalized = normalizeDemo(demo);
+  if (!normalized || !storage) {
+    return;
+  }
+  storage.setItem(LAST_DEMO_KEY, normalized);
+}
+
+export function resolveDemo({ demo = null, location = window.location, storage = window.localStorage } = {}) {
+  const explicit = normalizeDemo(demo);
+  if (explicit) {
+    return explicit;
+  }
+  const fromLocation = getDemoFromLocation(location);
+  if (fromLocation) {
+    return fromLocation;
+  }
+  return getLastDemo(storage);
 }
 
 export function makeKey(demo, key) {

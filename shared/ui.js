@@ -1,5 +1,5 @@
 import { samlSteps, oidcSteps } from './models.js';
-import { appendLog, resetDemo, getJson, getDemoFromLocation } from './storage.js';
+import { appendLog, resetDemo, getJson, getDemoFromLocation, resolveDemo, setLastDemo } from './storage.js';
 
 export function buildUrl(path, { basePath = '.', demo } = {}) {
   const normalizedBasePath = basePath.endsWith('/') ? basePath.slice(0, -1) : basePath;
@@ -14,7 +14,8 @@ export function buildUrl(path, { basePath = '.', demo } = {}) {
 }
 
 export function applyDemoLinks(demo, { basePath = '.' } = {}) {
-  if (!demo) {
+  const resolvedDemo = resolveDemo({ demo });
+  if (!resolvedDemo) {
     return;
   }
   document.querySelectorAll('[data-demo-path]').forEach((anchor) => {
@@ -22,7 +23,7 @@ export function applyDemoLinks(demo, { basePath = '.' } = {}) {
     if (!path) {
       return;
     }
-    anchor.setAttribute('href', buildUrl(path, { basePath, demo }));
+    anchor.setAttribute('href', buildUrl(path, { basePath, demo: resolvedDemo }));
   });
 }
 
@@ -37,7 +38,10 @@ export function renderHeader(activeRoleOrOptions = '', options = {}) {
     basePath = options.basePath ?? '.';
     demo = options.demo ?? null;
   }
-  const resolvedDemo = demo ?? getDemoFromLocation();
+  const resolvedDemo = resolveDemo({ demo });
+  if (resolvedDemo) {
+    setLastDemo(resolvedDemo);
+  }
   const header = document.createElement('header');
   const demoLabel = resolvedDemo ? `Demo: ${resolvedDemo.toUpperCase()}` : 'Demo: 未選択';
   header.innerHTML = `
@@ -291,7 +295,15 @@ export function renderDemoChooser({ basePath = '.' } = {}) {
 }
 
 export function requireDemo({ basePath = '.', demo = null } = {}) {
-  const resolvedDemo = demo ?? getDemoFromLocation();
+  const resolvedDemo = resolveDemo({ demo });
+  const demoFromLocation = getDemoFromLocation();
+  if (resolvedDemo && !demoFromLocation) {
+    const params = new URLSearchParams(window.location.search);
+    params.set('demo', resolvedDemo);
+    const nextUrl = `${window.location.pathname}?${params.toString()}${window.location.hash}`;
+    window.location.replace(nextUrl);
+    return null;
+  }
   if (!resolvedDemo) {
     const main = document.querySelector('main');
     if (main) {
@@ -300,5 +312,6 @@ export function requireDemo({ basePath = '.', demo = null } = {}) {
     }
     return null;
   }
+  setLastDemo(resolvedDemo);
   return resolvedDemo;
 }
