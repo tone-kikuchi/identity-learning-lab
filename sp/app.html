@@ -13,27 +13,32 @@
       <div class="card" id="sessionCard"></div>
       <div class="stack">
         <button class="button danger" id="logoutButton">ログアウト</button>
-        <a class="button secondary" href="./index.html">SPホームへ戻る</a>
+        <a class="button secondary" data-demo-path="sp/index.html">SPホームへ戻る</a>
       </div>
       <div class="card" id="flowSummary"></div>
     </main>
     <script type="module">
-      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '../shared/ui.js';
-      import { getJson, setJson, resetAll, appendLog } from '../shared/storage.js';
+      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage, requireDemo, applyDemoLinks, buildUrl } from '../shared/ui.js';
+      import { getJson, setJson, resetDemo, appendLog } from '../shared/storage.js';
 
-      renderHeader({ activeRole: 'sp', basePath: '..' });
-      if (!getJson('mockidp.apps')) {
-        resetAll();
+      const demo = requireDemo({ basePath: '..' });
+      renderHeader({ activeRole: 'sp', basePath: '..', demo });
+      if (!demo) {
+        return;
+      }
+      applyDemoLinks(demo, { basePath: '..' });
+      if (!getJson(demo, 'apps')) {
+        resetDemo(demo);
       }
 
       const params = new URLSearchParams(window.location.search);
       const appId = params.get('appId');
-      const [app] = getJson('mockidp.apps', []).filter((item) => item.id === appId);
-      const sessions = getJson('mockidp.spSessions', {});
+      const [app] = getJson(demo, 'apps', []).filter((item) => item.id === appId);
+      const sessions = getJson(demo, 'spSessions', {});
       const session = app ? sessions[app.id] : null;
 
       if (!session) {
-        window.location.href = './index.html';
+        window.location.href = buildUrl('sp/index.html', { basePath: '..', demo });
       }
 
       document.getElementById('sessionCard').innerHTML = `
@@ -47,9 +52,9 @@
         }
         const next = { ...sessions };
         delete next[app.id];
-        setJson('mockidp.spSessions', next);
-        appendLog({ actor: 'sp', action: 'logout', detail: `app=${app.id}` });
-        window.location.href = './index.html';
+        setJson(demo, 'spSessions', next);
+        appendLog(demo, { actor: 'sp', action: 'logout', detail: `app=${app.id}` });
+        window.location.href = buildUrl('sp/index.html', { basePath: '..', demo });
       });
 
       const summary = document.getElementById('flowSummary');
@@ -82,8 +87,8 @@
         params: { appId },
         generated: { session },
         validation: [],
-        storageSnapshot: snapshotStorage(),
-        logs: snapshotStorage().eventLog
+        storageSnapshot: snapshotStorage(demo),
+        logs: snapshotStorage(demo).eventLog
       });
       const stepBar = renderStepBar(app?.mode === 'oidc_like' ? 'oidc' : 'saml', 5);
       document.querySelector('main').insertBefore(stepBar, document.querySelector('main').children[2]);

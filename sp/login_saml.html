@@ -22,19 +22,23 @@
       <button class="button" id="toIdpButton">IdPへ移動</button>
     </main>
     <script type="module">
-      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '../shared/ui.js';
-      import { getJson, resetAll, appendLog } from '../shared/storage.js';
+      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage, requireDemo, buildUrl } from '../shared/ui.js';
+      import { getJson, getSessionJson, setSessionJson, resetDemo, appendLog } from '../shared/storage.js';
       import { randomId } from '../shared/crypto.js';
 
       const basePath = '..';
-      renderHeader({ activeRole: 'sp', basePath });
-      if (!getJson('mockidp.apps')) {
-        resetAll();
+      const demo = requireDemo({ basePath });
+      renderHeader({ activeRole: 'sp', basePath, demo });
+      if (!demo) {
+        return;
+      }
+      if (!getJson(demo, 'apps')) {
+        resetDemo(demo);
       }
 
       const params = new URLSearchParams(window.location.search);
-      const appId = params.get('appId') || getJson('mockidp.apps', [])[0]?.id;
-      const [app] = getJson('mockidp.apps', []).filter((item) => item.id === appId);
+      const appId = params.get('appId') || getJson(demo, 'apps', [])[0]?.id;
+      const [app] = getJson(demo, 'apps', []).filter((item) => item.id === appId);
 
       const requestId = randomId('req');
       const relayState = randomId('relay');
@@ -51,13 +55,13 @@
       document.getElementById('toIdpButton').addEventListener('click', () => {
         const expectedRelay = relayState;
         const actualRelay = toggleRelay.checked ? `${relayState}_wrong` : relayState;
-        sessionStorage.setItem('mockidp.expected', JSON.stringify({
+        setSessionJson(demo, 'expected', {
           appId: app?.id,
           requestId,
           relayState: expectedRelay
-        }));
-        appendLog({ actor: 'sp', action: 'login_start', detail: `requestId=${requestId}` });
-        const idpUrl = new URL(`${basePath}/idp/sso_saml.html`, window.location.href);
+        });
+        appendLog(demo, { actor: 'sp', action: 'login_start', detail: `requestId=${requestId}` });
+        const idpUrl = new URL(buildUrl('idp/sso_saml.html', { basePath, demo }), window.location.href);
         idpUrl.searchParams.set('appId', app?.id || '');
         idpUrl.searchParams.set('acs', app?.acsUrl || '');
         idpUrl.searchParams.set('spEntityId', app?.spEntityId || '');
@@ -69,10 +73,10 @@
       const panel = renderLearningPanel({
         purpose: 'SP initiated loginとしてAuthnRequest相当のパラメータを作りIdPへリダイレクトする。',
         params: request,
-        generated: { expectedStored: sessionStorage.getItem('mockidp.expected') },
+        generated: { expectedStored: getSessionJson(demo, 'expected') || null },
         validation: [],
-        storageSnapshot: snapshotStorage(),
-        logs: snapshotStorage().eventLog
+        storageSnapshot: snapshotStorage(demo),
+        logs: snapshotStorage(demo).eventLog
       });
       const stepBar = renderStepBar('saml', 0);
       document.querySelector('main').insertBefore(stepBar, document.querySelector('main').children[2]);

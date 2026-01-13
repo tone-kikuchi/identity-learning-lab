@@ -24,14 +24,18 @@
       </div>
     </main>
     <script type="module">
-      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '../shared/ui.js';
-      import { getJson, resetAll, appendLog } from '../shared/storage.js';
+      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage, requireDemo, buildUrl } from '../shared/ui.js';
+      import { getJson, setSessionJson, resetDemo, appendLog } from '../shared/storage.js';
       import { buildSamlLikeResponse } from '../shared/protocol_saml_like.js';
 
       const basePath = '..';
-      renderHeader({ activeRole: 'idp', basePath });
-      if (!getJson('mockidp.apps')) {
-        resetAll();
+      const demo = requireDemo({ basePath });
+      renderHeader({ activeRole: 'idp', basePath, demo });
+      if (!demo) {
+        return;
+      }
+      if (!getJson(demo, 'apps')) {
+        resetDemo(demo);
       }
 
       const params = new URLSearchParams(window.location.search);
@@ -43,14 +47,15 @@
         relayState: params.get('relayState')
       };
 
-      const sessionUserId = getJson('mockidp.idpSession');
+      const sessionUserId = getJson(demo, 'idpSession');
       if (!sessionUserId) {
-        const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
-        window.location.href = `./login.html?returnTo=${returnTo}`;
+        const loginUrl = new URL(buildUrl('idp/login.html', { basePath, demo }), window.location.href);
+        loginUrl.searchParams.set('returnTo', window.location.pathname + window.location.search);
+        window.location.href = loginUrl.toString();
       }
 
-      const [app] = getJson('mockidp.apps', []);
-      const users = getJson('mockidp.users', []);
+      const [app] = getJson(demo, 'apps', []);
+      const users = getJson(demo, 'users', []);
       const user = users.find((u) => u.id === sessionUserId);
 
       document.getElementById('requestCard').innerHTML = `
@@ -97,17 +102,18 @@
           sharedSecret: toggles.sig.checked ? 'wrong-secret' : app.sharedSecret
         };
         const { payloadObj, b64 } = await buildSamlLikeResponse({ app: overrideApp, user, request, overrides });
-        appendLog({ actor: 'idp', action: 'assertion', detail: `SAMLResponse for ${user.username}` });
+        appendLog(demo, { actor: 'idp', action: 'assertion', detail: `SAMLResponse for ${user.username}` });
 
-        sessionStorage.setItem('mockidp.lastPost', JSON.stringify({
+        setSessionJson(demo, 'lastPost', {
           SAMLResponse: b64,
           RelayState: request.relayState,
           appId: request.appId
-        }));
+        });
 
         const form = document.createElement('form');
-        const actionUrl = app.acsUrl || `${basePath}/sp/acs_receive.html`;
-        form.action = actionUrl;
+        const actionUrl = new URL(app.acsUrl || `${basePath}/sp/acs_receive.html`, window.location.href);
+        actionUrl.searchParams.set('demo', demo);
+        form.action = actionUrl.toString();
 
         const responseInput = document.createElement('input');
         responseInput.type = 'hidden';
@@ -145,8 +151,8 @@
         params: request,
         generated: { user },
         validation: [],
-        storageSnapshot: snapshotStorage(),
-        logs: snapshotStorage().eventLog
+        storageSnapshot: snapshotStorage(demo),
+        logs: snapshotStorage(demo).eventLog
       });
       const stepBar = renderStepBar('saml', 3);
       document.querySelector('main').insertBefore(stepBar, document.querySelector('main').children[2]);

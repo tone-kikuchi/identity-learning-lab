@@ -32,19 +32,23 @@
       <button class="button" id="toIdpButton">IdPへ移動</button>
     </main>
     <script type="module">
-      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '../shared/ui.js';
-      import { getJson, resetAll, appendLog } from '../shared/storage.js';
+      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage, requireDemo, buildUrl } from '../shared/ui.js';
+      import { getJson, getSessionJson, setSessionJson, resetDemo, appendLog } from '../shared/storage.js';
       import { randomId } from '../shared/crypto.js';
 
       const basePath = '..';
-      renderHeader({ activeRole: 'sp', basePath });
-      if (!getJson('mockidp.apps')) {
-        resetAll();
+      const demo = requireDemo({ basePath });
+      renderHeader({ activeRole: 'sp', basePath, demo });
+      if (!demo) {
+        return;
+      }
+      if (!getJson(demo, 'apps')) {
+        resetDemo(demo);
       }
 
       const params = new URLSearchParams(window.location.search);
       const appId = params.get('appId');
-      const apps = getJson('mockidp.apps', []);
+      const apps = getJson(demo, 'apps', []);
       const app = apps.find((item) => item.id === appId) || apps.find((item) => item.mode === 'oidc_like');
 
       const requestPreview = document.getElementById('requestPreview');
@@ -52,11 +56,15 @@
 
       const state = randomId('state');
       const nonce = randomId('nonce');
+      const redirectUri = app?.redirectUri ? new URL(app.redirectUri, window.location.href) : null;
+      if (redirectUri) {
+        redirectUri.searchParams.set('demo', demo);
+      }
       const request = {
         response_type: 'code',
         scope: 'openid',
         client_id: app?.clientId,
-        redirect_uri: app?.redirectUri,
+        redirect_uri: redirectUri?.toString() || app?.redirectUri,
         state,
         nonce,
         appId: app?.id
@@ -84,21 +92,21 @@
           nonce,
           createdAt: new Date().toISOString()
         };
-        sessionStorage.setItem('mockidp.oidc.expected', JSON.stringify(expected));
-        sessionStorage.setItem('mockidp.oidc.breakers', JSON.stringify({
+        setSessionJson(demo, 'oidc.expected', expected);
+        setSessionJson(demo, 'oidc.breakers', {
           tamperState: toggleState.checked,
           emptyNonce: toggleNonce.checked,
           reuseCode: toggleReuse.checked,
           shortExp: toggleExp.checked
-        }));
+        });
 
-        appendLog({ actor: 'sp', action: 'login_start', detail: `oidc client=${app.clientId}` });
+        appendLog(demo, { actor: 'sp', action: 'login_start', detail: `oidc client=${app.clientId}` });
 
-        const idpUrl = new URL(`${basePath}/idp/authorize.html`, window.location.href);
+        const idpUrl = new URL(buildUrl('idp/authorize.html', { basePath, demo }), window.location.href);
         idpUrl.searchParams.set('response_type', 'code');
         idpUrl.searchParams.set('scope', 'openid');
         idpUrl.searchParams.set('client_id', app.clientId || '');
-        idpUrl.searchParams.set('redirect_uri', app.redirectUri || '');
+        idpUrl.searchParams.set('redirect_uri', redirectUri?.toString() || app.redirectUri || '');
         idpUrl.searchParams.set('state', toggleState.checked ? `${state}_tampered` : state);
         idpUrl.searchParams.set('nonce', toggleNonce.checked ? '' : nonce);
         idpUrl.searchParams.set('appId', app.id || '');
@@ -106,9 +114,9 @@
       });
 
       const sessionSnapshot = {
-        ...snapshotStorage(),
-        oidcExpected: JSON.parse(sessionStorage.getItem('mockidp.oidc.expected') || 'null'),
-        oidcBreakers: JSON.parse(sessionStorage.getItem('mockidp.oidc.breakers') || 'null')
+        ...snapshotStorage(demo),
+        oidcExpected: getSessionJson(demo, 'oidc.expected', null),
+        oidcBreakers: getSessionJson(demo, 'oidc.breakers', null)
       };
 
       const panel = renderLearningPanel({

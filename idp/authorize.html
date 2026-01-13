@@ -19,28 +19,19 @@
       <div class="card stack" id="codeCard"></div>
     </main>
     <script type="module">
-      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '../shared/ui.js';
-      import { getJson, resetAll, appendLog } from '../shared/storage.js';
+      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage, requireDemo, buildUrl } from '../shared/ui.js';
+      import { getJson, getSessionJson, setSessionJson, resetDemo, appendLog } from '../shared/storage.js';
       import { randomId } from '../shared/crypto.js';
 
       const basePath = '..';
-      renderHeader({ activeRole: 'idp', basePath });
-      if (!getJson('mockidp.apps')) {
-        resetAll();
+      const demo = requireDemo({ basePath });
+      renderHeader({ activeRole: 'idp', basePath, demo });
+      if (!demo) {
+        return;
       }
-
-      const getSessionJson = (key, fallback = null) => {
-        const raw = sessionStorage.getItem(key);
-        if (!raw) {
-          return fallback;
-        }
-        try {
-          return JSON.parse(raw);
-        } catch (error) {
-          console.warn('Failed to parse session JSON', key, error);
-          return fallback;
-        }
-      };
+      if (!getJson(demo, 'apps')) {
+        resetDemo(demo);
+      }
 
       const params = new URLSearchParams(window.location.search);
       const request = {
@@ -53,18 +44,24 @@
         appId: params.get('appId')
       };
 
-      const sessionUserId = getJson('mockidp.idpSession');
+      const sessionUserId = getJson(demo, 'idpSession');
       if (!sessionUserId) {
-        const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
-        window.location.href = `./login.html?returnTo=${returnTo}`;
+        const loginUrl = new URL(buildUrl('idp/login.html', { basePath, demo }), window.location.href);
+        loginUrl.searchParams.set('returnTo', window.location.pathname + window.location.search);
+        window.location.href = loginUrl.toString();
       }
 
-      const apps = getJson('mockidp.apps', []);
+      const apps = getJson(demo, 'apps', []);
       const app = apps.find((item) => item.id === request.appId) ||
         apps.find((item) => item.mode === 'oidc_like' && item.clientId === request.client_id);
 
-      const users = getJson('mockidp.users', []);
+      const users = getJson(demo, 'users', []);
       const user = users.find((u) => u.id === sessionUserId);
+      const redirectUri = app?.redirectUri ? new URL(app.redirectUri, window.location.href) : null;
+      if (redirectUri) {
+        redirectUri.searchParams.set('demo', demo);
+      }
+      const expectedRedirectUri = redirectUri?.toString() || app?.redirectUri;
 
       const requestCard = document.getElementById('requestCard');
       requestCard.innerHTML = `
@@ -85,8 +82,8 @@
         },
         {
           name: 'redirect_uri一致',
-          ok: Boolean(app && app.redirectUri === request.redirect_uri),
-          detail: `expected=${app?.redirectUri || '-'} actual=${request.redirect_uri}`
+          ok: Boolean(app && expectedRedirectUri === request.redirect_uri),
+          detail: `expected=${expectedRedirectUri || '-'} actual=${request.redirect_uri}`
         },
         {
           name: 'response_type=code',
@@ -116,26 +113,26 @@
         codeCard.innerHTML = `
           <h2>認可コード発行</h2>
           <p class="notice">クライアント検証に失敗したため、コード発行できません。</p>
-          <a class="button secondary" href="./index.html">IdPホームへ戻る</a>
+          <a class="button secondary" href="${buildUrl('idp/index.html', { basePath, demo })}">IdPホームへ戻る</a>
         `;
       } else {
         const now = Math.floor(Date.now() / 1000);
-        const breakers = getSessionJson('mockidp.oidc.breakers', {});
+        const breakers = getSessionJson(demo, 'oidc.breakers', {});
         const exp = breakers.shortExp ? now - 10 : now + 300;
         const code = randomId('code');
         const record = {
           appId: app.id,
           clientId: app.clientId,
-          redirectUri: app.redirectUri,
+          redirectUri: expectedRedirectUri,
           userId: user.id,
           nonce: request.nonce,
           iat: now,
           exp,
           used: false
         };
-        const codes = getSessionJson('mockidp.oidc.codes', {});
+        const codes = getSessionJson(demo, 'oidc.codes', {});
         codes[code] = record;
-        sessionStorage.setItem('mockidp.oidc.codes', JSON.stringify(codes));
+        setSessionJson(demo, 'oidc.codes', codes);
 
         codeCard.innerHTML = `
           <h2>認可コード発行</h2>
@@ -144,7 +141,7 @@
         `;
 
         document.getElementById('redirectButton').addEventListener('click', () => {
-          appendLog({ actor: 'idp', action: 'code_issued', detail: `client=${app.clientId}` });
+          appendLog(demo, { actor: 'idp', action: 'code_issued', detail: `client=${app.clientId}` });
           const redirectUrl = new URL(request.redirect_uri, window.location.href);
           redirectUrl.searchParams.set('code', code);
           redirectUrl.searchParams.set('state', request.state || '');
@@ -154,9 +151,9 @@
       }
 
       const sessionSnapshot = {
-        ...snapshotStorage(),
-        oidcCodes: getSessionJson('mockidp.oidc.codes', {}),
-        oidcBreakers: getSessionJson('mockidp.oidc.breakers', {})
+        ...snapshotStorage(demo),
+        oidcCodes: getSessionJson(demo, 'oidc.codes', {}),
+        oidcBreakers: getSessionJson(demo, 'oidc.breakers', {})
       };
 
       const panel = renderLearningPanel({

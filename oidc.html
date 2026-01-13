@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OIDC-like Demo</title>
+    <link rel="stylesheet" href="./assets/style.css" />
+  </head>
+  <body>
+    <main>
+      <h1>OIDC-like デモ</h1>
+      <p class="muted">OIDC-likeの認可フローとトークン検証を、ブラウザだけで体験します。</p>
+
+      <div class="card">
+        <h2>このデモで学ぶこと</h2>
+        <ul>
+          <li>client_id / redirect_uri などの役割</li>
+          <li>認可コード発行からコールバック検証までの流れ</li>
+          <li>署名や有効期限チェックの検証ポイント</li>
+        </ul>
+      </div>
+
+      <div class="card stack">
+        <h2>このデモを初期化</h2>
+        <p class="muted">OIDC-likeデモ用のアプリ設定とユーザーを投入します。</p>
+        <button class="button" id="initButton">このデモを初期化</button>
+      </div>
+
+      <div class="card">
+        <h2>次に進む</h2>
+        <div class="stack">
+          <a class="button" data-demo-path="admin/index.html">Adminへ</a>
+          <a class="button secondary" data-demo-path="sp/login_oidc.html">SPでログイン開始</a>
+          <a class="button secondary" data-demo-path="idp/index.html">IdPへ</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>おすすめ手順</h2>
+        <ol>
+          <li>AdminでOIDC-likeアプリ設定を確認</li>
+          <li>SPでログイン開始（IdPへリダイレクト）</li>
+          <li>IdPでユーザー認証と認可</li>
+          <li>IdPが認可コードを発行</li>
+          <li>SPのコールバックで検証してセッション作成</li>
+        </ol>
+      </div>
+    </main>
+    <script type="module">
+      import { renderHeader, applyDemoLinks } from './shared/ui.js';
+      import { resetDemo, appendLog } from './shared/storage.js';
+
+      const demo = 'oidc';
+      renderHeader({ activeRole: 'oidc', basePath: '.', demo });
+      applyDemoLinks(demo, { basePath: '.' });
+
+      document.getElementById('initButton').addEventListener('click', () => {
+        resetDemo(demo);
+        appendLog(demo, { actor: 'system', action: 'init', detail: 'seed oidc demo data' });
+        window.location.reload();
+      });
+    </script>
+  </body>
+</html>

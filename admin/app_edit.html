@@ -9,7 +9,7 @@
   <body>
     <main>
       <h1>アプリ設定</h1>
-      <p class="muted">SAML-like / OIDC-like の設定を学習用に編集します。</p>
+      <p class="muted">選択中のデモの設定を学習用に編集します。</p>
       <form class="card form-grid" id="samlForm">
         <h2>SAML-like 設定</h2>
         <label>
@@ -51,19 +51,24 @@
         </label>
         <button class="button" type="submit">OIDC設定を保存</button>
       </form>
-      <a class="button secondary" href="./index.html">戻る</a>
+      <a class="button secondary" data-demo-path="admin/index.html">戻る</a>
     </main>
     <script type="module">
-      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '../shared/ui.js';
-      import { getJson, setJson, resetAll, appendLog } from '../shared/storage.js';
+      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage, requireDemo, applyDemoLinks, buildUrl } from '../shared/ui.js';
+      import { getJson, setJson, resetDemo, appendLog } from '../shared/storage.js';
       import { randomId } from '../shared/crypto.js';
 
-      renderHeader({ activeRole: 'admin', basePath: '..' });
-      if (!getJson('mockidp.apps')) {
-        resetAll();
+      const demo = requireDemo({ basePath: '..' });
+      renderHeader({ activeRole: 'admin', basePath: '..', demo });
+      if (!demo) {
+        return;
+      }
+      applyDemoLinks(demo, { basePath: '..' });
+      if (!getJson(demo, 'apps')) {
+        resetDemo(demo);
       }
 
-      const apps = getJson('mockidp.apps', []);
+      const apps = getJson(demo, 'apps', []);
       const samlApp = apps.find((item) => item.mode === 'saml_like') || {
         id: randomId('app_saml'),
         name: 'Sample SAML App',
@@ -91,21 +96,14 @@
       oidcForm.clientId.value = oidcApp.clientId || '';
       oidcForm.redirectUri.value = oidcApp.redirectUri || '../sp/callback.html';
 
+      if (demo === 'saml') {
+        oidcForm.style.display = 'none';
+      } else {
+        samlForm.style.display = 'none';
+      }
+
       const upsertApp = (updated) => {
-        const existing = getJson('mockidp.apps', []);
-        const next = [...existing];
-        const idIndex = next.findIndex((item) => item.id === updated.id);
-        if (idIndex >= 0) {
-          next[idIndex] = updated;
-        } else {
-          const modeIndex = next.findIndex((item) => item.mode === updated.mode);
-          if (modeIndex >= 0) {
-            next[modeIndex] = updated;
-          } else {
-            next.push(updated);
-          }
-        }
-        setJson('mockidp.apps', next);
+        setJson(demo, 'apps', [updated]);
       };
 
       samlForm.addEventListener('submit', (event) => {
@@ -118,8 +116,8 @@
           sharedSecret: samlForm.sharedSecret.value
         };
         upsertApp(updated);
-        appendLog({ actor: 'admin', action: 'update', detail: `update app ${updated.name}` });
-        window.location.href = './index.html';
+        appendLog(demo, { actor: 'admin', action: 'update', detail: `update app ${updated.name}` });
+        window.location.href = buildUrl('admin/index.html', { basePath: '..', demo });
       });
 
       oidcForm.addEventListener('submit', (event) => {
@@ -131,20 +129,21 @@
           redirectUri: oidcForm.redirectUri.value
         };
         upsertApp(updated);
-        appendLog({ actor: 'admin', action: 'update', detail: `update app ${updated.name}` });
-        window.location.href = './index.html';
+        appendLog(demo, { actor: 'admin', action: 'update', detail: `update app ${updated.name}` });
+        window.location.href = buildUrl('admin/index.html', { basePath: '..', demo });
       });
 
       const panel = renderLearningPanel({
-        purpose: 'SAML-likeとOIDC-likeの設定値を管理するフォーム。',
+        purpose: 'デモごとの設定値を管理するフォーム。',
         params: {},
-        generated: { samlApp, oidcApp },
+        generated: demo === 'saml' ? { samlApp } : { oidcApp },
         validation: [],
-        storageSnapshot: snapshotStorage(),
-        logs: snapshotStorage().eventLog
+        storageSnapshot: snapshotStorage(demo),
+        logs: snapshotStorage(demo).eventLog
       });
-      const stepBar = renderStepBar('saml', 0);
-      document.querySelector('main').insertBefore(stepBar, samlForm);
+      const stepBar = renderStepBar(demo, 0);
+      const formAnchor = demo === 'saml' ? samlForm : oidcForm;
+      document.querySelector('main').insertBefore(stepBar, formAnchor);
       document.querySelector('main').appendChild(panel);
     </script>
   </body>
