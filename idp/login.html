@@ -20,17 +20,21 @@
       <div class="notice" id="inactiveNotice" hidden>選択したユーザーはinactiveです。</div>
     </main>
     <script type="module">
-      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '../shared/ui.js';
-      import { getJson, setJson, resetAll, appendLog } from '../shared/storage.js';
+      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage, requireDemo, buildUrl } from '../shared/ui.js';
+      import { getJson, setJson, resetDemo, appendLog } from '../shared/storage.js';
 
-      renderHeader({ activeRole: 'idp', basePath: '..' });
-      if (!getJson('mockidp.users')) {
-        resetAll();
+      const demo = requireDemo({ basePath: '..' });
+      renderHeader({ activeRole: 'idp', basePath: '..', demo });
+      if (!demo) {
+        return;
+      }
+      if (!getJson(demo, 'users')) {
+        resetDemo(demo);
       }
 
       const params = new URLSearchParams(window.location.search);
-      const returnTo = params.get('returnTo') || './index.html';
-      const users = getJson('mockidp.users', []);
+      const returnTo = params.get('returnTo') || buildUrl('idp/index.html', { basePath: '..', demo });
+      const users = getJson(demo, 'users', []);
       const select = document.querySelector('select[name="userId"]');
       users.forEach((user) => {
         const option = document.createElement('option');
@@ -48,8 +52,8 @@
 
       document.getElementById('loginForm').addEventListener('submit', (event) => {
         event.preventDefault();
-        setJson('mockidp.idpSession', select.value);
-        appendLog({ actor: 'idp', action: 'login', detail: `user=${select.value}` });
+        setJson(demo, 'idpSession', select.value);
+        appendLog(demo, { actor: 'idp', action: 'login', detail: `user=${select.value}` });
         window.location.href = returnTo;
       });
 
@@ -58,10 +62,10 @@
         params: { returnTo },
         generated: { selectedUserId: select.value },
         validation: [],
-        storageSnapshot: snapshotStorage(),
-        logs: snapshotStorage().eventLog
+        storageSnapshot: snapshotStorage(demo),
+        logs: snapshotStorage(demo).eventLog
       });
-      const stepBar = renderStepBar('saml', 2);
+      const stepBar = renderStepBar(demo, 2);
       document.querySelector('main').insertBefore(stepBar, document.querySelector('main').children[2]);
       document.querySelector('main').appendChild(panel);
     </script>

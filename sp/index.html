@@ -15,81 +15,103 @@
       <div class="stack" id="actionStack"></div>
     </main>
     <script type="module">
-      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '../shared/ui.js';
-      import { getJson, setJson, resetAll, appendLog } from '../shared/storage.js';
+      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage, requireDemo, buildUrl } from '../shared/ui.js';
+      import { getJson, setJson, resetDemo, appendLog } from '../shared/storage.js';
 
-      renderHeader({ activeRole: 'sp', basePath: '..' });
-      if (!getJson('mockidp.apps')) {
-        resetAll();
+      const demo = requireDemo({ basePath: '..' });
+      renderHeader({ activeRole: 'sp', basePath: '..', demo });
+      if (!demo) {
+        return;
+      }
+      if (!getJson(demo, 'apps')) {
+        resetDemo(demo);
       }
 
-      const apps = getJson('mockidp.apps', []);
+      const apps = getJson(demo, 'apps', []);
       const samlApp = apps.find((item) => item.mode === 'saml_like');
       const oidcApp = apps.find((item) => item.mode === 'oidc_like');
-      const sessions = getJson('mockidp.spSessions', {});
+      const sessions = getJson(demo, 'spSessions', {});
       const samlSession = samlApp ? sessions[samlApp.id] : null;
       const oidcSession = oidcApp ? sessions[oidcApp.id] : null;
 
       const sessionCard = document.getElementById('sessionCard');
-      sessionCard.innerHTML = `
-        <h2>現在のセッション</h2>
-        <pre>${JSON.stringify({ saml: samlSession || null, oidc: oidcSession || null }, null, 2)}</pre>
-      `;
+      sessionCard.innerHTML = demo === 'saml'
+        ? `
+          <h2>現在のSAML-likeセッション</h2>
+          <pre>${JSON.stringify(samlSession || null, null, 2)}</pre>
+        `
+        : `
+          <h2>現在のOIDC-likeセッション</h2>
+          <pre>${JSON.stringify(oidcSession || null, null, 2)}</pre>
+        `;
 
       const appCard = document.getElementById('appCard');
-      appCard.innerHTML = `
-        <h2>アプリ選択</h2>
-        <div>
-          <h3>SAML-like</h3>
-          <p><strong>${samlApp?.name || '未設定'}</strong></p>
-          <p class="muted">SP Entity ID: ${samlApp?.spEntityId || '-'}</p>
-        </div>
-        <div>
-          <h3>OIDC-like</h3>
-          <p><strong>${oidcApp?.name || '未設定'}</strong></p>
-          <p class="muted">Client ID: ${oidcApp?.clientId || '-'}</p>
-        </div>
-      `;
+      appCard.innerHTML = demo === 'saml'
+        ? `
+          <h2>SAML-like アプリ</h2>
+          <div>
+            <p><strong>${samlApp?.name || '未設定'}</strong></p>
+            <p class="muted">SP Entity ID: ${samlApp?.spEntityId || '-'}</p>
+          </div>
+        `
+        : `
+          <h2>OIDC-like アプリ</h2>
+          <div>
+            <p><strong>${oidcApp?.name || '未設定'}</strong></p>
+            <p class="muted">Client ID: ${oidcApp?.clientId || '-'}</p>
+          </div>
+        `;
 
       const actionStack = document.getElementById('actionStack');
-      actionStack.innerHTML = `
-        <a class="button" href="./login_saml.html?appId=${samlApp?.id || ''}">SAMLでログイン</a>
-        <a class="button" href="./login_oidc.html?appId=${oidcApp?.id || ''}">OIDCでログイン</a>
-        <button class="button danger" id="logoutSaml">SAMLをログアウト</button>
-        <button class="button danger" id="logoutOidc">OIDCをログアウト</button>
-      `;
+      if (demo === 'saml') {
+        actionStack.innerHTML = `
+          <a class="button" href="${buildUrl(`sp/login_saml.html?appId=${samlApp?.id || ''}`, { basePath: '..', demo })}">SAMLでログイン</a>
+          <button class="button danger" id="logoutSaml">SAMLをログアウト</button>
+        `;
+      } else {
+        actionStack.innerHTML = `
+          <a class="button" href="${buildUrl(`sp/login_oidc.html?appId=${oidcApp?.id || ''}`, { basePath: '..', demo })}">OIDCでログイン</a>
+          <button class="button danger" id="logoutOidc">OIDCをログアウト</button>
+        `;
+      }
 
-      document.getElementById('logoutSaml').addEventListener('click', () => {
-        if (!samlApp) {
-          return;
-        }
-        const next = { ...sessions };
-        delete next[samlApp.id];
-        setJson('mockidp.spSessions', next);
-        appendLog({ actor: 'sp', action: 'logout', detail: `app=${samlApp.id}` });
-        window.location.reload();
-      });
+      const logoutSaml = document.getElementById('logoutSaml');
+      if (logoutSaml) {
+        logoutSaml.addEventListener('click', () => {
+          if (!samlApp) {
+            return;
+          }
+          const next = { ...sessions };
+          delete next[samlApp.id];
+          setJson(demo, 'spSessions', next);
+          appendLog(demo, { actor: 'sp', action: 'logout', detail: `app=${samlApp.id}` });
+          window.location.reload();
+        });
+      }
 
-      document.getElementById('logoutOidc').addEventListener('click', () => {
-        if (!oidcApp) {
-          return;
-        }
-        const next = { ...sessions };
-        delete next[oidcApp.id];
-        setJson('mockidp.spSessions', next);
-        appendLog({ actor: 'sp', action: 'logout', detail: `app=${oidcApp.id}` });
-        window.location.reload();
-      });
+      const logoutOidc = document.getElementById('logoutOidc');
+      if (logoutOidc) {
+        logoutOidc.addEventListener('click', () => {
+          if (!oidcApp) {
+            return;
+          }
+          const next = { ...sessions };
+          delete next[oidcApp.id];
+          setJson(demo, 'spSessions', next);
+          appendLog(demo, { actor: 'sp', action: 'logout', detail: `app=${oidcApp.id}` });
+          window.location.reload();
+        });
+      }
 
       const panel = renderLearningPanel({
         purpose: 'SP側でログイン開始やセッションの有無を確認する。',
         params: { samlAppId: samlApp?.id, oidcAppId: oidcApp?.id },
         generated: { samlSession, oidcSession },
         validation: [],
-        storageSnapshot: snapshotStorage(),
-        logs: snapshotStorage().eventLog
+        storageSnapshot: snapshotStorage(demo),
+        logs: snapshotStorage(demo).eventLog
       });
-      const stepBar = renderStepBar('saml', 0);
+      const stepBar = renderStepBar(demo, 0);
       document.querySelector('main').insertBefore(stepBar, sessionCard);
       document.querySelector('main').appendChild(panel);
     </script>

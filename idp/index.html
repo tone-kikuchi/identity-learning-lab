@@ -12,23 +12,38 @@
       <p class="muted">IdP側のログイン状態やSSO開始を確認します。</p>
       <div class="card" id="sessionCard"></div>
       <div class="stack">
-        <a class="button" href="./login.html">ログイン（ユーザー選択）</a>
-        <a class="button secondary" href="../sp/login_saml.html">SP Login開始へ</a>
-        <a class="button secondary" href="../sp/login_oidc.html">SP OIDC Login開始へ</a>
+        <a class="button" data-demo-path="idp/login.html">ログイン（ユーザー選択）</a>
+        <a class="button secondary" data-demo-path="sp/login_saml.html">SP Login開始へ</a>
+        <a class="button secondary" data-demo-path="sp/login_oidc.html">SP OIDC Login開始へ</a>
       </div>
     </main>
     <script type="module">
-      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '../shared/ui.js';
-      import { getJson, resetAll } from '../shared/storage.js';
+      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage, requireDemo, applyDemoLinks } from '../shared/ui.js';
+      import { getJson, resetDemo } from '../shared/storage.js';
 
-      renderHeader({ activeRole: 'idp', basePath: '..' });
-      if (!getJson('mockidp.users')) {
-        resetAll();
+      const demo = requireDemo({ basePath: '..' });
+      renderHeader({ activeRole: 'idp', basePath: '..', demo });
+      if (!demo) {
+        return;
+      }
+      applyDemoLinks(demo, { basePath: '..' });
+      if (!getJson(demo, 'users')) {
+        resetDemo(demo);
       }
 
-      const sessionId = getJson('mockidp.idpSession');
-      const users = getJson('mockidp.users', []);
+      const sessionId = getJson(demo, 'idpSession');
+      const users = getJson(demo, 'users', []);
       const user = users.find((u) => u.id === sessionId);
+
+      const samlLink = document.querySelector('[data-demo-path="sp/login_saml.html"]');
+      const oidcLink = document.querySelector('[data-demo-path="sp/login_oidc.html"]');
+      if (demo === 'saml') {
+        if (oidcLink) {
+          oidcLink.style.display = 'none';
+        }
+      } else if (samlLink) {
+        samlLink.style.display = 'none';
+      }
 
       document.getElementById('sessionCard').innerHTML = `
         <h2>現在のログインユーザー</h2>
@@ -40,10 +55,10 @@
         params: {},
         generated: { user },
         validation: [],
-        storageSnapshot: snapshotStorage(),
-        logs: snapshotStorage().eventLog
+        storageSnapshot: snapshotStorage(demo),
+        logs: snapshotStorage(demo).eventLog
       });
-      const stepBar = renderStepBar('saml', 1);
+      const stepBar = renderStepBar(demo, 1);
       document.querySelector('main').insertBefore(stepBar, document.querySelector('main').children[2]);
       document.querySelector('main').appendChild(panel);
     </script>

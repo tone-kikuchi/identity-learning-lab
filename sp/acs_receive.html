@@ -20,12 +20,16 @@
       </form>
     </main>
     <script type="module">
-      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '../shared/ui.js';
-      import { appendLog, getJson, resetAll } from '../shared/storage.js';
+      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage, requireDemo, buildUrl } from '../shared/ui.js';
+      import { appendLog, getJson, getSessionJson, setSessionJson, resetDemo } from '../shared/storage.js';
 
-      renderHeader({ activeRole: 'sp', basePath: '..' });
-      if (!getJson('mockidp.apps')) {
-        resetAll();
+      const demo = requireDemo({ basePath: '..' });
+      renderHeader({ activeRole: 'sp', basePath: '..', demo });
+      if (!demo) {
+        return;
+      }
+      if (!getJson(demo, 'apps')) {
+        resetDemo(demo);
       }
 
       const statusCard = document.getElementById('statusCard');
@@ -38,17 +42,17 @@
           appId: form.elements.appId?.value
         };
         if (!values.SAMLResponse) {
-          const fallback = sessionStorage.getItem('mockidp.lastPost');
+          const fallback = getSessionJson(demo, 'lastPost', null);
           if (fallback) {
-            Object.assign(values, JSON.parse(fallback));
+            Object.assign(values, fallback);
           }
         }
         return values;
       }
 
       const received = readPostValues();
-      sessionStorage.setItem('mockidp.received', JSON.stringify(received));
-      appendLog({ actor: 'sp', action: 'acs_receive', detail: 'received SAMLResponse' });
+      setSessionJson(demo, 'received', received);
+      appendLog(demo, { actor: 'sp', action: 'acs_receive', detail: 'received SAMLResponse' });
 
       statusCard.innerHTML = `
         <h2>受信内容</h2>
@@ -57,7 +61,7 @@
       `;
 
       setTimeout(() => {
-        const nextUrl = new URL('./acs.html', window.location.href);
+        const nextUrl = new URL(buildUrl('sp/acs.html', { basePath: '..', demo }), window.location.href);
         if (received.appId) {
           nextUrl.searchParams.set('appId', received.appId);
         }
@@ -69,8 +73,8 @@
         params: {},
         generated: received,
         validation: [],
-        storageSnapshot: snapshotStorage(),
-        logs: snapshotStorage().eventLog
+        storageSnapshot: snapshotStorage(demo),
+        logs: snapshotStorage(demo).eventLog
       });
       const stepBar = renderStepBar('saml', 4);
       document.querySelector('main').insertBefore(stepBar, document.querySelector('main').children[2]);

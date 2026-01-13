@@ -1,35 +1,69 @@
 import { samlSteps, oidcSteps } from './models.js';
-import { appendLog, resetAll, getJson } from './storage.js';
+import { appendLog, resetDemo, getJson, getDemoFromLocation } from './storage.js';
+
+export function buildUrl(path, { basePath = '.', demo } = {}) {
+  const normalizedBasePath = basePath.endsWith('/') ? basePath.slice(0, -1) : basePath;
+  const resolvedBasePath = normalizedBasePath || '.';
+  const normalizedPath = path.startsWith('/') ? path.slice(1) : path;
+  const url = `${resolvedBasePath}/${normalizedPath}`;
+  if (!demo) {
+    return url;
+  }
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}demo=${encodeURIComponent(demo)}`;
+}
+
+export function applyDemoLinks(demo, { basePath = '.' } = {}) {
+  if (!demo) {
+    return;
+  }
+  document.querySelectorAll('[data-demo-path]').forEach((anchor) => {
+    const path = anchor.dataset.demoPath;
+    if (!path) {
+      return;
+    }
+    anchor.setAttribute('href', buildUrl(path, { basePath, demo }));
+  });
+}
 
 export function renderHeader(activeRoleOrOptions = '', options = {}) {
   let activeRole = '';
   let basePath = '.';
+  let demo = null;
   if (typeof activeRoleOrOptions === 'object' && activeRoleOrOptions !== null) {
-    ({ activeRole = '', basePath = '.' } = activeRoleOrOptions);
+    ({ activeRole = '', basePath = '.', demo = null } = activeRoleOrOptions);
   } else {
     activeRole = activeRoleOrOptions;
     basePath = options.basePath ?? '.';
+    demo = options.demo ?? null;
   }
-  const normalizedBasePath = basePath.endsWith('/') ? basePath.slice(0, -1) : basePath;
-  const resolvedBasePath = normalizedBasePath || '.';
+  const resolvedDemo = demo ?? getDemoFromLocation();
   const header = document.createElement('header');
+  const demoLabel = resolvedDemo ? `Demo: ${resolvedDemo.toUpperCase()}` : 'Demo: 未選択';
   header.innerHTML = `
     <div class="header-inner">
       <div class="nav-links">
-        <a href="${resolvedBasePath}/index.html" class="${activeRole === 'home' ? 'active' : ''}">Home</a>
-        <a href="${resolvedBasePath}/guide.html" class="${activeRole === 'guide' ? 'active' : ''}">Guide</a>
-        <a href="${resolvedBasePath}/admin/index.html" class="${activeRole === 'admin' ? 'active' : ''}">Admin</a>
-        <a href="${resolvedBasePath}/idp/index.html" class="${activeRole === 'idp' ? 'active' : ''}">IdP</a>
-        <a href="${resolvedBasePath}/sp/index.html" class="${activeRole === 'sp' ? 'active' : ''}">SP</a>
+        <a href="${buildUrl('index.html', { basePath })}" class="${activeRole === 'guide' ? 'active' : ''}">Guide</a>
+        <a href="${buildUrl('saml.html', { basePath })}" class="${activeRole === 'saml' ? 'active' : ''}">SAML Demo</a>
+        <a href="${buildUrl('oidc.html', { basePath })}" class="${activeRole === 'oidc' ? 'active' : ''}">OIDC Demo</a>
+        <a href="${buildUrl('admin/index.html', { basePath, demo: resolvedDemo })}" class="${activeRole === 'admin' ? 'active' : ''}">Admin</a>
+        <a href="${buildUrl('idp/index.html', { basePath, demo: resolvedDemo })}" class="${activeRole === 'idp' ? 'active' : ''}">IdP</a>
+        <a href="${buildUrl('sp/index.html', { basePath, demo: resolvedDemo })}" class="${activeRole === 'sp' ? 'active' : ''}">SP</a>
       </div>
-      <button class="button secondary" id="resetButton">Reset</button>
+      <div class="header-actions">
+        <span class="demo-label ${resolvedDemo ? '' : 'muted'}">${demoLabel}</span>
+        ${resolvedDemo ? '<button class="button secondary" id="resetButton">Reset</button>' : ''}
+      </div>
     </div>
   `;
-  header.querySelector('#resetButton').addEventListener('click', () => {
-    resetAll();
-    appendLog({ actor: 'system', action: 'reset', detail: 'localStorage reset' });
-    window.location.reload();
-  });
+  const resetButton = header.querySelector('#resetButton');
+  if (resetButton) {
+    resetButton.addEventListener('click', () => {
+      resetDemo(resolvedDemo);
+      appendLog(resolvedDemo, { actor: 'system', action: 'reset', detail: 'demo storage reset' });
+      window.location.reload();
+    });
+  }
   document.body.prepend(header);
 }
 
@@ -231,12 +265,40 @@ function formatLogs(logs) {
     .join('\n')}</div>`;
 }
 
-export function snapshotStorage() {
+export function snapshotStorage(demo = null) {
+  const resolvedDemo = demo ?? getDemoFromLocation();
   return {
-    apps: getJson('mockidp.apps', []),
-    users: getJson('mockidp.users', []),
-    idpSession: getJson('mockidp.idpSession', null),
-    spSessions: getJson('mockidp.spSessions', {}),
-    eventLog: getJson('mockidp.eventLog', [])
+    apps: getJson(resolvedDemo, 'apps', []),
+    users: getJson(resolvedDemo, 'users', []),
+    idpSession: getJson(resolvedDemo, 'idpSession', null),
+    spSessions: getJson(resolvedDemo, 'spSessions', {}),
+    eventLog: getJson(resolvedDemo, 'eventLog', [])
   };
+}
+
+export function renderDemoChooser({ basePath = '.' } = {}) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'card stack';
+  wrapper.innerHTML = `
+    <h2>デモを選択してください</h2>
+    <p class="muted">SAML-like または OIDC-like のデモを選び、学習を開始します。</p>
+    <div class="stack">
+      <a class="button" href="${buildUrl('saml.html', { basePath })}">SAML-like デモへ</a>
+      <a class="button secondary" href="${buildUrl('oidc.html', { basePath })}">OIDC-like デモへ</a>
+    </div>
+  `;
+  return wrapper;
+}
+
+export function requireDemo({ basePath = '.', demo = null } = {}) {
+  const resolvedDemo = demo ?? getDemoFromLocation();
+  if (!resolvedDemo) {
+    const main = document.querySelector('main');
+    if (main) {
+      main.innerHTML = '';
+      main.appendChild(renderDemoChooser({ basePath }));
+    }
+    return null;
+  }
+  return resolvedDemo;
 }

@@ -9,52 +9,71 @@
   <body>
     <main>
       <h1>Admin Home</h1>
-      <p class="muted">SAML-like / OIDC-like アプリ設定の概要を確認します。</p>
+      <p class="muted">選択中のデモのアプリ設定の概要を確認します。</p>
       <div class="card stack" id="appSummary"></div>
       <div class="stack">
-        <a class="button" href="./app_edit.html">アプリ設定を編集</a>
-        <a class="button secondary" href="../sp/login_saml.html">SP > SAML Login開始へ</a>
-        <a class="button secondary" href="../sp/login_oidc.html">SP > OIDC Login開始へ</a>
+        <a class="button" data-demo-path="admin/app_edit.html">アプリ設定を編集</a>
+        <a class="button secondary" data-demo-path="sp/login_saml.html">SP > SAML Login開始へ</a>
+        <a class="button secondary" data-demo-path="sp/login_oidc.html">SP > OIDC Login開始へ</a>
       </div>
     </main>
     <script type="module">
-      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '../shared/ui.js';
-      import { getJson, resetAll, appendLog } from '../shared/storage.js';
+      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage, requireDemo, applyDemoLinks } from '../shared/ui.js';
+      import { getJson, resetDemo, appendLog } from '../shared/storage.js';
 
-      renderHeader({ activeRole: 'admin', basePath: '..' });
-      if (!getJson('mockidp.apps')) {
-        resetAll();
+      const demo = requireDemo({ basePath: '..' });
+      renderHeader({ activeRole: 'admin', basePath: '..', demo });
+      if (!demo) {
+        return;
+      }
+      applyDemoLinks(demo, { basePath: '..' });
+      if (!getJson(demo, 'apps')) {
+        resetDemo(demo);
       }
 
-      const apps = getJson('mockidp.apps', []);
+      const apps = getJson(demo, 'apps', []);
       const samlApp = apps.find((item) => item.mode === 'saml_like');
       const oidcApp = apps.find((item) => item.mode === 'oidc_like');
       const summary = document.getElementById('appSummary');
-      summary.innerHTML = `
-        <h2>現在のアプリ設定</h2>
-        <table class="table">
-          <tr><th colspan="2">SAML-like</th></tr>
-          <tr><th>Name</th><td>${samlApp?.name || '未設定'}</td></tr>
-          <tr><th>SP Entity ID</th><td>${samlApp?.spEntityId || '未設定'}</td></tr>
-          <tr><th>ACS URL</th><td>${samlApp?.acsUrl || '未設定'}</td></tr>
-          <tr><th colspan="2">OIDC-like</th></tr>
-          <tr><th>Name</th><td>${oidcApp?.name || '未設定'}</td></tr>
-          <tr><th>Client ID</th><td>${oidcApp?.clientId || '未設定'}</td></tr>
-          <tr><th>Redirect URI</th><td>${oidcApp?.redirectUri || '未設定'}</td></tr>
-        </table>
-      `;
+      const samlLink = document.querySelector('[data-demo-path="sp/login_saml.html"]');
+      const oidcLink = document.querySelector('[data-demo-path="sp/login_oidc.html"]');
+      if (demo === 'saml') {
+        if (oidcLink) {
+          oidcLink.style.display = 'none';
+        }
+      } else if (samlLink) {
+        samlLink.style.display = 'none';
+      }
+      summary.innerHTML = demo === 'saml'
+        ? `
+          <h2>現在のSAML-likeアプリ設定</h2>
+          <table class="table">
+            <tr><th>Name</th><td>${samlApp?.name || '未設定'}</td></tr>
+            <tr><th>SP Entity ID</th><td>${samlApp?.spEntityId || '未設定'}</td></tr>
+            <tr><th>ACS URL</th><td>${samlApp?.acsUrl || '未設定'}</td></tr>
+            <tr><th>Shared Secret</th><td>${samlApp?.sharedSecret || '未設定'}</td></tr>
+          </table>
+        `
+        : `
+          <h2>現在のOIDC-likeアプリ設定</h2>
+          <table class="table">
+            <tr><th>Name</th><td>${oidcApp?.name || '未設定'}</td></tr>
+            <tr><th>Client ID</th><td>${oidcApp?.clientId || '未設定'}</td></tr>
+            <tr><th>Redirect URI</th><td>${oidcApp?.redirectUri || '未設定'}</td></tr>
+          </table>
+        `;
 
-      appendLog({ actor: 'admin', action: 'view', detail: 'admin home viewed' });
+      appendLog(demo, { actor: 'admin', action: 'view', detail: 'admin home viewed' });
 
       const panel = renderLearningPanel({
-        purpose: 'AdminがSAML-likeアプリ設定を確認するページ。',
+        purpose: 'Adminがデモごとのアプリ設定を確認するページ。',
         params: {},
-        generated: { samlApp, oidcApp },
+        generated: demo === 'saml' ? { samlApp } : { oidcApp },
         validation: [],
-        storageSnapshot: snapshotStorage(),
-        logs: snapshotStorage().eventLog
+        storageSnapshot: snapshotStorage(demo),
+        logs: snapshotStorage(demo).eventLog
       });
-      const stepBar = renderStepBar('saml', 0);
+      const stepBar = renderStepBar(demo, 0);
       document.querySelector('main').insertBefore(stepBar, summary);
       document.querySelector('main').appendChild(panel);
     </script>

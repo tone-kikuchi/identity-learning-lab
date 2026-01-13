@@ -9,59 +9,40 @@
   <body>
     <main>
       <h1>Identity Learning Lab</h1>
-      <p class="muted">SAML-likeフローをブラウザだけで体験する学習用デモです。</p>
+      <p class="muted">SAML-like / OIDC-like をブラウザだけで体験する学習用デモです。</p>
       <div class="card-grid">
         <div class="card">
-          <h2>Admin</h2>
-          <p>アプリ設定（SP Entity IDや共有鍵など）を編集します。</p>
-          <a class="button" href="./admin/index.html">管理画面へ</a>
+          <h2>SAML-like デモ</h2>
+          <p>SP Entity IDや署名用の共有鍵など、SAML-like設定を確認できます。</p>
+          <a class="button" href="./saml.html">SAMLデモへ</a>
         </div>
         <div class="card">
-          <h2>Guide</h2>
-          <p>SAMLプロトコルとフロー、このデモでできることをまとめて確認します。</p>
+          <h2>OIDC-like デモ</h2>
+          <p>OIDC-likeの認可フローとトークン発行をブラウザだけで追体験します。</p>
+          <a class="button" href="./oidc.html">OIDCデモへ</a>
+        </div>
+        <div class="card">
+          <h2>詳細ガイド</h2>
+          <p>SAML-likeの基礎用語やフローの詳細を確認します。</p>
           <a class="button secondary" href="./guide.html">ガイドを見る</a>
-        </div>
-        <div class="card">
-          <h2>IdP</h2>
-          <p>ユーザー認証とSAML-likeアサーション生成を行います。</p>
-          <a class="button" href="./idp/index.html">IdPへ</a>
-        </div>
-        <div class="card">
-          <h2>SP</h2>
-          <p>ログイン開始からACS検証までの流れを確認します。</p>
-          <a class="button" href="./sp/index.html">SPへ</a>
         </div>
       </div>
       <div class="card">
         <h2>このデモの流れ</h2>
         <ol>
-          <li>AdminでSAML-likeアプリ設定</li>
-          <li>SPでLogin開始（IdPへリダイレクト）</li>
-          <li>IdPでユーザー認証</li>
-          <li>IdPがアサーション生成してSPへ送信</li>
-          <li>SPのACSが検証してセッション作成</li>
+          <li>デモ入口で初期化（SAML/OIDC）</li>
+          <li>Adminでアプリ設定を確認</li>
+          <li>SPでログイン開始</li>
+          <li>IdPでユーザー認証と認可</li>
+          <li>SPで検証してセッション作成</li>
         </ol>
+        <p class="muted">SAMLとOIDCは別のデータ領域で管理され、設定は混ざりません。</p>
       </div>
     </main>
     <script type="module">
-      import { renderHeader, renderLearningPanel, snapshotStorage } from './shared/ui.js';
-      import { getJson, resetAll, appendLog } from './shared/storage.js';
+      import { renderHeader } from './shared/ui.js';
 
-      renderHeader({ activeRole: 'home', basePath: '.' });
-      if (!getJson('mockidp.apps')) {
-        resetAll();
-        appendLog({ actor: 'system', action: 'init', detail: 'seed sample data' });
-      }
-
-      const panel = renderLearningPanel({
-        purpose: '入口ページ。Admin / IdP / SP のいずれに進むかを選びます。',
-        params: {},
-        generated: {},
-        validation: [],
-        storageSnapshot: snapshotStorage(),
-        logs: snapshotStorage().eventLog
-      });
-      document.querySelector('main').appendChild(panel);
+      renderHeader({ activeRole: 'guide', basePath: '.' });
     </script>
   </body>
 </html>

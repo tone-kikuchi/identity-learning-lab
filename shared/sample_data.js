@@ -1,23 +1,3 @@
-export function sampleApps() {
-  return [
-    {
-      id: 'app_sample',
-      name: 'Sample SAML App',
-      mode: 'saml_like',
-      spEntityId: 'sp.sample',
-      acsUrl: '../sp/acs_receive.html',
-      sharedSecret: 'dev-secret-change-me'
-    },
-    {
-      id: 'app_oidc_demo',
-      name: 'Sample OIDC App',
-      mode: 'oidc_like',
-      clientId: 'client_demo',
-      redirectUri: '../sp/callback.html'
-    }
-  ];
-}
-
 export function sampleUsers() {
   return [
     {
@@ -35,4 +15,35 @@ export function sampleUsers() {
       active: false
     }
   ];
+}
+
+export function seedSamlDemo() {
+  return {
+    apps: [
+      {
+        id: 'app_sample',
+        name: 'Sample SAML App',
+        mode: 'saml_like',
+        spEntityId: 'sp.sample',
+        acsUrl: '../sp/acs_receive.html',
+        sharedSecret: 'dev-secret-change-me'
+      }
+    ],
+    users: sampleUsers()
+  };
+}
+
+export function seedOidcDemo() {
+  return {
+    apps: [
+      {
+        id: 'app_oidc_demo',
+        name: 'Sample OIDC App',
+        mode: 'oidc_like',
+        clientId: 'client_demo',
+        redirectUri: '../sp/callback.html'
+      }
+    ],
+    users: sampleUsers()
+  };
 }
