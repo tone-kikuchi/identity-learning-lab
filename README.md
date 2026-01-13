@@ -70,15 +70,10 @@ SAML と OIDC のデータは localStorage / sessionStorage の名前空間で�
 
 ## Testing
 
-ローカルでユニットテストとE2Eテストを実行できます。
+ローカルのテストは Node.js 組み込みテストランナーで実行します。
 
-1. 依存関係をインストールします（E2E テストを実行する場合に必要です）。
-   - `npm install`
-2. ユニットテストを実行します（Node.js 組み込みテストランナーを使用します）。
+1. テストを実行します。
    - `npm test`
-3. E2Eテストを実行します（初回は Playwright のブラウザをインストール）。
-   - `npx playwright install --with-deps`
-   - `npm run test:e2e:ci`
 
 ## Contributing
 

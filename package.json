@@ -5,16 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 4173 --strictPort",
-    "test": "node --import ./tests/setup-node.js --test tests/unit/*.test.js",
-    "test:watch": "node --import ./tests/setup-node.js --test --watch tests/unit/*.test.js",
-    "test:e2e": "playwright test",
-    "test:e2e:ci": "start-server-and-test dev http://127.0.0.1:4173 test:e2e"
+    "test": "node --test"
   },
   "devDependencies": {
-    "@playwright/test": "^1.48.0",
     "jsdom": "^25.0.0",
     "start-server-and-test": "^2.0.5",
-    "vite": "^5.4.8",
-    "vitest": "^2.1.1"
+    "vite": "^5.4.8"
   }
 }

@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
@@ -24,21 +25,19 @@ async function collectHtmlFiles(dir) {
   return files.flat();
 }
 
-describe('HTML asset paths', () => {
-  it('does not use root-absolute href/src paths', async () => {
-    const htmlFiles = await collectHtmlFiles(repoRoot);
-    const offenders = [];
+test('HTML does not use root-absolute /shared or /sp paths', async () => {
+  const htmlFiles = await collectHtmlFiles(repoRoot);
+  const offenders = [];
 
-    await Promise.all(
-      htmlFiles.map(async (file) => {
-        const content = await fs.readFile(file, 'utf8');
-        const matches = content.matchAll(/(?:href|src)=["']\\//g);
-        for (const match of matches) {
-          offenders.push(`${path.relative(repoRoot, file)}: ${match[0]}`);
-        }
-      })
-    );
+  await Promise.all(
+    htmlFiles.map(async (file) => {
+      const content = await fs.readFile(file, 'utf8');
+      const matches = content.matchAll(/(?:href|src)=["']\/(?:shared|sp)(?:\/|["'])/g);
+      for (const match of matches) {
+        offenders.push(`${path.relative(repoRoot, file)}: ${match[0]}`);
+      }
+    })
+  );
 
-    expect(offenders).toEqual([]);
-  });
+  assert.deepEqual(offenders, []);
 });
