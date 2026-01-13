@@ -16,7 +16,7 @@
     </main>
     <script type="module">
       import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage, requireDemo, buildUrl } from '../shared/ui.js';
-      import { getJson, getSessionJson, setJson, resetDemo, appendLog } from '../shared/storage.js';
+      import { getJson, getSessionJson, setJson, ensureDemoSeed, appendLog } from '../shared/storage.js';
       import { verifySamlLikeResponse } from '../shared/protocol_saml_like.js';
 
       const demo = requireDemo({ basePath: '..' });
@@ -24,9 +24,7 @@
       if (!demo) {
         return;
       }
-      if (!getJson(demo, 'apps')) {
-        resetDemo(demo);
-      }
+      ensureDemoSeed(demo);
 
       const inputCard = document.getElementById('inputCard');
       const payloadCard = document.getElementById('payloadCard');

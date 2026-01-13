@@ -19,7 +19,7 @@
     </main>
     <script type="module">
       import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage, requireDemo, applyDemoLinks } from '../shared/ui.js';
-      import { getJson, resetDemo, appendLog } from '../shared/storage.js';
+      import { getJson, ensureDemoSeed, appendLog } from '../shared/storage.js';
 
       const demo = requireDemo({ basePath: '..' });
       renderHeader({ activeRole: 'admin', basePath: '..', demo });
@@ -27,9 +27,7 @@
         return;
       }
       applyDemoLinks(demo, { basePath: '..' });
-      if (!getJson(demo, 'apps')) {
-        resetDemo(demo);
-      }
+      ensureDemoSeed(demo);
 
       const apps = getJson(demo, 'apps', []);
       const samlApp = apps.find((item) => item.mode === 'saml_like');

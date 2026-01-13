@@ -16,16 +16,14 @@
     </main>
     <script type="module">
       import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage, requireDemo, buildUrl } from '../shared/ui.js';
-      import { getJson, setJson, resetDemo, appendLog } from '../shared/storage.js';
+      import { getJson, setJson, ensureDemoSeed, appendLog } from '../shared/storage.js';
 
       const demo = requireDemo({ basePath: '..' });
       renderHeader({ activeRole: 'sp', basePath: '..', demo });
       if (!demo) {
         return;
       }
-      if (!getJson(demo, 'apps')) {
-        resetDemo(demo);
-      }
+      ensureDemoSeed(demo);
 
       const apps = getJson(demo, 'apps', []);
       const samlApp = apps.find((item) => item.mode === 'saml_like');

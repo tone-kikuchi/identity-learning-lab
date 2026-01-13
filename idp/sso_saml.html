@@ -25,7 +25,7 @@
     </main>
     <script type="module">
       import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage, requireDemo, buildUrl } from '../shared/ui.js';
-      import { getJson, setSessionJson, resetDemo, appendLog } from '../shared/storage.js';
+      import { getJson, setSessionJson, ensureDemoSeed, appendLog } from '../shared/storage.js';
       import { buildSamlLikeResponse } from '../shared/protocol_saml_like.js';
 
       const basePath = '..';
@@ -34,9 +34,7 @@
       if (!demo) {
         return;
       }
-      if (!getJson(demo, 'apps')) {
-        resetDemo(demo);
-      }
+      ensureDemoSeed(demo);
 
       const params = new URLSearchParams(window.location.search);
       const request = {
