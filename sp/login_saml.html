@@ -35,8 +35,10 @@
       ensureDemoSeed(demo);
 
       const params = new URLSearchParams(window.location.search);
-      const appId = params.get('appId') || getJson(demo, 'apps', [])[0]?.id;
-      const [app] = getJson(demo, 'apps', []).filter((item) => item.id === appId);
+      const storedApps = getJson(demo, 'apps', []);
+      const apps = Array.isArray(storedApps) ? storedApps : [];
+      const appId = params.get('appId') || apps[0]?.id;
+      const app = apps.find((item) => item.id === appId) || apps.find((item) => item.mode === 'saml_like');
 
       const requestId = randomId('req');
       const relayState = randomId('relay');
@@ -47,10 +49,21 @@
         requestId,
         relayState
       };
-      document.getElementById('requestPreview').textContent = JSON.stringify(request, null, 2);
+      const requestPreview = document.getElementById('requestPreview');
+      const toIdpButton = document.getElementById('toIdpButton');
+
+      if (!app) {
+        requestPreview.textContent = 'SAML-likeアプリ設定がありません。Adminで追加してください。';
+        toIdpButton.disabled = true;
+      } else {
+        requestPreview.textContent = JSON.stringify(request, null, 2);
+      }
 
       const toggleRelay = document.getElementById('toggleRelay');
-      document.getElementById('toIdpButton').addEventListener('click', () => {
+      toIdpButton.addEventListener('click', () => {
+        if (!app) {
+          return;
+        }
         const expectedRelay = relayState;
         const actualRelay = toggleRelay.checked ? `${relayState}_wrong` : relayState;
         setSessionJson(demo, 'expected', {
