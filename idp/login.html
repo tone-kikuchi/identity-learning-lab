@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IdP Login</title>
+    <link rel="stylesheet" href="/assets/style.css" />
+  </head>
+  <body>
+    <main>
+      <h1>IdP ログイン</h1>
+      <p class="muted">IdP側でユーザー認証（学習用に選択式）を行います。</p>
+      <form class="card form-grid" id="loginForm">
+        <label>
+          ユーザー選択
+          <select name="userId" required></select>
+        </label>
+        <button class="button" type="submit">ログイン</button>
+      </form>
+      <div class="notice" id="inactiveNotice" hidden>選択したユーザーはinactiveです。</div>
+    </main>
+    <script type="module">
+      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '/shared/ui.js';
+      import { getJson, setJson, resetAll, appendLog } from '/shared/storage.js';
+
+      renderHeader('idp');
+      if (!getJson('mockidp.users')) {
+        resetAll();
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const returnTo = params.get('returnTo') || '/idp/';
+      const users = getJson('mockidp.users', []);
+      const select = document.querySelector('select[name="userId"]');
+      users.forEach((user) => {
+        const option = document.createElement('option');
+        option.value = user.id;
+        option.textContent = `${user.displayName} (${user.username})${user.active ? '' : ' - inactive'}`;
+        option.disabled = !user.active;
+        select.appendChild(option);
+      });
+
+      const notice = document.getElementById('inactiveNotice');
+      select.addEventListener('change', () => {
+        const selected = users.find((user) => user.id === select.value);
+        notice.hidden = !selected || selected.active;
+      });
+
+      document.getElementById('loginForm').addEventListener('submit', (event) => {
+        event.preventDefault();
+        setJson('mockidp.idpSession', select.value);
+        appendLog({ actor: 'idp', action: 'login', detail: `user=${select.value}` });
+        window.location.href = returnTo;
+      });
+
+      const panel = renderLearningPanel({
+        purpose: 'IdP側でユーザー認証を行う（学習用に選択式）。',
+        params: { returnTo },
+        generated: { selectedUserId: select.value },
+        validation: [],
+        storageSnapshot: snapshotStorage(),
+        logs: snapshotStorage().eventLog
+      });
+      const stepBar = renderStepBar('saml', 2);
+      document.querySelector('main').insertBefore(stepBar, document.querySelector('main').children[2]);
+      document.querySelector('main').appendChild(panel);
+    </script>
+  </body>
+</html>

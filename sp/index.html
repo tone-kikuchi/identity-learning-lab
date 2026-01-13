@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SP Home</title>
+    <link rel="stylesheet" href="/assets/style.css" />
+  </head>
+  <body>
+    <main>
+      <h1>SP Home</h1>
+      <p class="muted">SPとしてログイン開始/セッション確認を行います。</p>
+      <div class="card" id="sessionCard"></div>
+      <div class="card" id="appCard"></div>
+      <div class="stack">
+        <a class="button" id="loginButton" href="/sp/login_saml.html">SAMLでログイン</a>
+        <button class="button danger" id="logoutButton">ログアウト</button>
+      </div>
+    </main>
+    <script type="module">
+      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '/shared/ui.js';
+      import { getJson, setJson, resetAll, appendLog } from '/shared/storage.js';
+
+      renderHeader('sp');
+      if (!getJson('mockidp.apps')) {
+        resetAll();
+      }
+
+      const [app] = getJson('mockidp.apps', []);
+      const sessions = getJson('mockidp.spSessions', {});
+      const session = app ? sessions[app.id] : null;
+
+      const sessionCard = document.getElementById('sessionCard');
+      sessionCard.innerHTML = `
+        <h2>現在のセッション</h2>
+        <pre>${session ? JSON.stringify(session, null, 2) : '未ログイン'}</pre>
+      `;
+
+      const appCard = document.getElementById('appCard');
+      appCard.innerHTML = `
+        <h2>アプリ選択</h2>
+        <p><strong>${app?.name || '未設定'}</strong></p>
+        <p class="muted">SP Entity ID: ${app?.spEntityId || '-'}</p>
+      `;
+
+      document.getElementById('loginButton').href = `/sp/login_saml.html?appId=${app?.id || ''}`;
+      document.getElementById('logoutButton').addEventListener('click', () => {
+        if (!app) {
+          return;
+        }
+        const next = { ...sessions };
+        delete next[app.id];
+        setJson('mockidp.spSessions', next);
+        appendLog({ actor: 'sp', action: 'logout', detail: `app=${app.id}` });
+        window.location.reload();
+      });
+
+      const panel = renderLearningPanel({
+        purpose: 'SP側でログイン開始やセッションの有無を確認する。',
+        params: { appId: app?.id },
+        generated: { session },
+        validation: [],
+        storageSnapshot: snapshotStorage(),
+        logs: snapshotStorage().eventLog
+      });
+      const stepBar = renderStepBar('saml', 0);
+      document.querySelector('main').insertBefore(stepBar, sessionCard);
+      document.querySelector('main').appendChild(panel);
+    </script>
+  </body>
+</html>
