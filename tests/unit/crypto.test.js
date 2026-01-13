@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
 import { createHmac } from 'node:crypto';
 
 import { hmacSha256Hex, stableStringify } from '../../shared/crypto.js';
@@ -17,7 +18,7 @@ describe('crypto utilities', () => {
       gamma: [2, 1]
     };
 
-    expect(stableStringify(input)).toBe('{"alpha":{"c":3,"d":4},"beta":1,"gamma":[2,1]}');
+    assert.equal(stableStringify(input), '{"alpha":{"c":3,"d":4},"beta":1,"gamma":[2,1]}');
   });
 
   it('hmacSha256Hex matches node crypto output', async () => {
@@ -25,6 +26,7 @@ describe('crypto utilities', () => {
     const secret = 'super-secret';
 
     const expected = hmacHex(message, secret);
-    await expect(hmacSha256Hex(message, secret)).resolves.toBe(expected);
+    const actual = await hmacSha256Hex(message, secret);
+    assert.equal(actual, expected);
   });
 });
