@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SP ACS Receive</title>
-    <link rel="stylesheet" href="/assets/style.css" />
+    <link rel="stylesheet" href="../assets/style.css" />
   </head>
   <body>
     <main>
@@ -20,10 +20,10 @@
       </form>
     </main>
     <script type="module">
-      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '/shared/ui.js';
-      import { appendLog, getJson, resetAll } from '/shared/storage.js';
+      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '../shared/ui.js';
+      import { appendLog, getJson, resetAll } from '../shared/storage.js';
 
-      renderHeader('sp');
+      renderHeader({ activeRole: 'sp', basePath: '..' });
       if (!getJson('mockidp.apps')) {
         resetAll();
       }
@@ -57,7 +57,7 @@
       `;
 
       setTimeout(() => {
-        const nextUrl = new URL('/sp/acs.html', window.location.origin);
+        const nextUrl = new URL('./acs.html', window.location.href);
         if (received.appId) {
           nextUrl.searchParams.set('appId', received.appId);
         }

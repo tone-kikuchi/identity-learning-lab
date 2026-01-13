@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>IdP SSO (SAML-like)</title>
-    <link rel="stylesheet" href="/assets/style.css" />
+    <link rel="stylesheet" href="../assets/style.css" />
   </head>
   <body>
     <main>
@@ -24,11 +24,12 @@
       </div>
     </main>
     <script type="module">
-      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '/shared/ui.js';
-      import { getJson, resetAll, appendLog } from '/shared/storage.js';
-      import { buildSamlLikeResponse } from '/shared/protocol_saml_like.js';
+      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '../shared/ui.js';
+      import { getJson, resetAll, appendLog } from '../shared/storage.js';
+      import { buildSamlLikeResponse } from '../shared/protocol_saml_like.js';
 
-      renderHeader('idp');
+      const basePath = '..';
+      renderHeader({ activeRole: 'idp', basePath });
       if (!getJson('mockidp.apps')) {
         resetAll();
       }
@@ -45,7 +46,7 @@
       const sessionUserId = getJson('mockidp.idpSession');
       if (!sessionUserId) {
         const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
-        window.location.href = `/idp/login.html?returnTo=${returnTo}`;
+        window.location.href = `./login.html?returnTo=${returnTo}`;
       }
 
       const [app] = getJson('mockidp.apps', []);
@@ -106,7 +107,7 @@
 
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = app.acsUrl || '/sp/acs_receive.html';
+        form.action = app.acsUrl || `${basePath}/sp/acs_receive.html`;
 
         const responseInput = document.createElement('input');
         responseInput.type = 'hidden';

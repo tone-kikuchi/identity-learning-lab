@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin - App Edit</title>
-    <link rel="stylesheet" href="/assets/style.css" />
+    <link rel="stylesheet" href="../assets/style.css" />
   </head>
   <body>
     <main>
@@ -32,13 +32,13 @@
         </label>
         <button class="button" type="submit">保存</button>
       </form>
-      <a class="button secondary" href="/admin/">戻る</a>
+      <a class="button secondary" href="./index.html">戻る</a>
     </main>
     <script type="module">
-      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '/shared/ui.js';
-      import { getJson, setJson, resetAll, appendLog } from '/shared/storage.js';
+      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '../shared/ui.js';
+      import { getJson, setJson, resetAll, appendLog } from '../shared/storage.js';
 
-      renderHeader('admin');
+      renderHeader({ activeRole: 'admin', basePath: '..' });
       if (!getJson('mockidp.apps')) {
         resetAll();
       }
@@ -47,7 +47,7 @@
       const form = document.getElementById('appForm');
       form.name.value = app?.name || '';
       form.spEntityId.value = app?.spEntityId || '';
-      form.acsUrl.value = app?.acsUrl || '/sp/acs_receive.html';
+      form.acsUrl.value = app?.acsUrl || '../sp/acs_receive.html';
       form.sharedSecret.value = app?.sharedSecret || 'dev-secret-change-me';
 
       form.addEventListener('submit', (event) => {
@@ -61,7 +61,7 @@
         };
         setJson('mockidp.apps', [updated]);
         appendLog({ actor: 'admin', action: 'update', detail: `update app ${updated.name}` });
-        window.location.href = '/admin/';
+        window.location.href = './index.html';
       });
 
       const panel = renderLearningPanel({
