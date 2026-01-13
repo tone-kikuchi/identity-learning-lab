@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 4173 --strictPort",
-    "test": "vitest",
-    "test:watch": "vitest --watch",
+    "test": "node --import ./tests/setup-node.js --test tests/unit/*.test.js",
+    "test:watch": "node --import ./tests/setup-node.js --test --watch tests/unit/*.test.js",
     "test:e2e": "playwright test",
     "test:e2e:ci": "start-server-and-test dev http://127.0.0.1:4173 test:e2e"
   },

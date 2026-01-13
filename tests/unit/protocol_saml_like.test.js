@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
 
 import { buildSamlLikeResponse, verifySamlLikeResponse } from '../../shared/protocol_saml_like.js';
 
@@ -38,8 +39,8 @@ describe('SAML-like protocol', () => {
       b64
     });
 
-    expect(result.ok).toBe(true);
-    expect(result.payload?.subject?.username).toBe(user.username);
+    assert.equal(result.ok, true);
+    assert.equal(result.payload?.subject?.username, user.username);
   });
 
   it('fails verification when audience does not match', async () => {
@@ -60,7 +61,7 @@ describe('SAML-like protocol', () => {
       b64
     });
 
-    expect(result.ok).toBe(false);
-    expect(result.checks.some((check) => check.name === 'aud一致' && !check.ok)).toBe(true);
+    assert.equal(result.ok, false);
+    assert.equal(result.checks.some((check) => check.name === 'aud一致' && !check.ok), true);
   });
 });
