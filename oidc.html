@@ -48,11 +48,12 @@
     </main>
     <script type="module">
       import { renderHeader, applyDemoLinks } from './shared/ui.js';
-      import { resetDemo, appendLog } from './shared/storage.js';
+      import { resetDemo, appendLog, setLastDemo } from './shared/storage.js';
 
       const demo = 'oidc';
       renderHeader({ activeRole: 'oidc', basePath: '.', demo });
       applyDemoLinks(demo, { basePath: '.' });
+      setLastDemo(demo);
 
       document.getElementById('initButton').addEventListener('click', () => {
         resetDemo(demo);
