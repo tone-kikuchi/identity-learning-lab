@@ -21,16 +21,14 @@
     </main>
     <script type="module">
       import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage, requireDemo, buildUrl } from '../shared/ui.js';
-      import { appendLog, getJson, getSessionJson, setSessionJson, resetDemo } from '../shared/storage.js';
+      import { appendLog, getJson, getSessionJson, setSessionJson, ensureDemoSeed } from '../shared/storage.js';
 
       const demo = requireDemo({ basePath: '..' });
       renderHeader({ activeRole: 'sp', basePath: '..', demo });
       if (!demo) {
         return;
       }
-      if (!getJson(demo, 'apps')) {
-        resetDemo(demo);
-      }
+      ensureDemoSeed(demo);
 
       const statusCard = document.getElementById('statusCard');
       const form = document.getElementById('postedForm');

@@ -91,6 +91,20 @@ export function resetDemo(demo) {
   setJson(normalized, 'eventLog', []);
 }
 
+export function ensureDemoSeed(demo) {
+  const normalized = normalizeDemo(demo);
+  if (!normalized) {
+    return;
+  }
+  const apps = getJson(normalized, 'apps');
+  const users = getJson(normalized, 'users');
+  const hasApps = Array.isArray(apps) && apps.length > 0;
+  const hasUsers = Array.isArray(users) && users.length > 0;
+  if (!hasApps || !hasUsers) {
+    resetDemo(normalized);
+  }
+}
+
 export function appendLog(demo, event) {
   const existing = getJson(demo, 'eventLog', []);
   const next = [...existing, { at: new Date().toISOString(), ...event }];
