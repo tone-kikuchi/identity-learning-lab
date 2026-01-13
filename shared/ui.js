@@ -17,6 +17,7 @@ export function renderHeader(activeRoleOrOptions = '', options = {}) {
     <div class="header-inner">
       <div class="nav-links">
         <a href="${resolvedBasePath}/index.html" class="${activeRole === 'home' ? 'active' : ''}">Home</a>
+        <a href="${resolvedBasePath}/guide.html" class="${activeRole === 'guide' ? 'active' : ''}">Guide</a>
         <a href="${resolvedBasePath}/admin/index.html" class="${activeRole === 'admin' ? 'active' : ''}">Admin</a>
         <a href="${resolvedBasePath}/idp/index.html" class="${activeRole === 'idp' ? 'active' : ''}">IdP</a>
         <a href="${resolvedBasePath}/sp/index.html" class="${activeRole === 'sp' ? 'active' : ''}">SP</a>

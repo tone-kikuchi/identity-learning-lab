@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SAMLガイド</title>
+    <link rel="stylesheet" href="./assets/style.css" />
+  </head>
+  <body>
+    <main>
+      <h1>SAMLプロトコルとこのデモの見どころ</h1>
+      <p class="muted">
+        SAML（Security Assertion Markup Language）は、IdPとSPの間で認証情報をやり取りするための標準規格です。
+        このデモではSAMLを簡略化したSAML-likeフローを、ブラウザだけで追体験できます。
+      </p>
+
+      <div class="card-grid">
+        <div class="card">
+          <h2>登場人物（役割）</h2>
+          <ul>
+            <li><strong>IdP</strong>: ユーザー認証を行い、SAMLアサーションを発行</li>
+            <li><strong>SP</strong>: 受け取ったアサーションを検証してログインを成立</li>
+            <li><strong>ユーザー</strong>: SPにアクセスし、IdPで認証</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h2>代表的な要素</h2>
+          <ul>
+            <li><span class="inline-code">AuthnRequest</span>: SPからIdPへの認証要求</li>
+            <li><span class="inline-code">SAML Response</span>: IdPからSPへの応答</li>
+            <li><span class="inline-code">Assertion</span>: 認証結果（ユーザー識別子や属性）</li>
+            <li><span class="inline-code">ACS</span>: SP側で応答を受け取るエンドポイント</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h2>フローの概要</h2>
+          <ol>
+            <li>SPがログイン開始（AuthnRequest送信）</li>
+            <li>IdPでユーザー認証</li>
+            <li>IdPがアサーションを生成しSAML Responseを送信</li>
+            <li>SPのACSが検証しセッションを作成</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>このデモでできること</h2>
+        <div class="card-grid">
+          <div class="card">
+            <h3>設定の理解</h3>
+            <p>
+              Admin画面でSP Entity IDやACS URL、署名用の共有鍵などを編集し、
+              IdPとSPの連携に必要な値がどこで使われるかを確認できます。
+            </p>
+          </div>
+          <div class="card">
+            <h3>SSO体験</h3>
+            <p>
+              SPからログインを開始し、IdPでユーザーを選択して認証する一連の流れを体験できます。
+            </p>
+          </div>
+          <div class="card">
+            <h3>アサーションの中身</h3>
+            <p>
+              生成されたSAML-likeレスポンスやアサーションを画面上で確認し、
+              どんな情報がSPに渡るのかを観察できます。
+            </p>
+          </div>
+          <div class="card">
+            <h3>検証のポイント</h3>
+            <p>
+              SP側で署名や有効期限などの検証結果を確認し、
+              正常系/異常系の振る舞いを学べます。
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>おすすめの進め方</h2>
+        <ol>
+          <li>HomeからAdminへ移動してアプリ設定を確認</li>
+          <li>SPでログイン開始</li>
+          <li>IdPでユーザーを選択して認証</li>
+          <li>SPのACS画面で検証結果とセッションを確認</li>
+        </ol>
+        <div class="stack">
+          <a class="button" href="./admin/index.html">Adminへ</a>
+          <a class="button secondary" href="./sp/index.html">SPへ</a>
+        </div>
+      </div>
+
+      <div class="notice">
+        <strong>注意:</strong> 本デモは学習用にSAMLを簡略化した実装です。実際のSAML運用では暗号署名、
+        証明書、リプレイ攻撃対策などの詳細な検証が必要になります。
+      </div>
+    </main>
+    <script type="module">
+      import { renderHeader } from './shared/ui.js';
+
+      renderHeader({ activeRole: 'guide', basePath: '.' });
+    </script>
+  </body>
+</html>
