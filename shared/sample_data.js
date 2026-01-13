@@ -7,6 +7,13 @@ export function sampleApps() {
       spEntityId: 'sp.sample',
       acsUrl: '../sp/acs_receive.html',
       sharedSecret: 'dev-secret-change-me'
+    },
+    {
+      id: 'app_oidc_demo',
+      name: 'Sample OIDC App',
+      mode: 'oidc_like',
+      clientId: 'client_demo',
+      redirectUri: '../sp/callback.html'
     }
   ];
 }

@@ -9,11 +9,12 @@
   <body>
     <main>
       <h1>Admin Home</h1>
-      <p class="muted">SAML-likeアプリ設定の概要を確認します。</p>
+      <p class="muted">SAML-like / OIDC-like アプリ設定の概要を確認します。</p>
       <div class="card stack" id="appSummary"></div>
       <div class="stack">
         <a class="button" href="./app_edit.html">アプリ設定を編集</a>
-        <a class="button secondary" href="../sp/login_saml.html">SP > Login開始へ</a>
+        <a class="button secondary" href="../sp/login_saml.html">SP > SAML Login開始へ</a>
+        <a class="button secondary" href="../sp/login_oidc.html">SP > OIDC Login開始へ</a>
       </div>
     </main>
     <script type="module">
@@ -25,14 +26,21 @@
         resetAll();
       }
 
-      const [app] = getJson('mockidp.apps', []);
+      const apps = getJson('mockidp.apps', []);
+      const samlApp = apps.find((item) => item.mode === 'saml_like');
+      const oidcApp = apps.find((item) => item.mode === 'oidc_like');
       const summary = document.getElementById('appSummary');
       summary.innerHTML = `
         <h2>現在のアプリ設定</h2>
         <table class="table">
-          <tr><th>Name</th><td>${app?.name || '未設定'}</td></tr>
-          <tr><th>SP Entity ID</th><td>${app?.spEntityId || '未設定'}</td></tr>
-          <tr><th>ACS URL</th><td>${app?.acsUrl || '未設定'}</td></tr>
+          <tr><th colspan="2">SAML-like</th></tr>
+          <tr><th>Name</th><td>${samlApp?.name || '未設定'}</td></tr>
+          <tr><th>SP Entity ID</th><td>${samlApp?.spEntityId || '未設定'}</td></tr>
+          <tr><th>ACS URL</th><td>${samlApp?.acsUrl || '未設定'}</td></tr>
+          <tr><th colspan="2">OIDC-like</th></tr>
+          <tr><th>Name</th><td>${oidcApp?.name || '未設定'}</td></tr>
+          <tr><th>Client ID</th><td>${oidcApp?.clientId || '未設定'}</td></tr>
+          <tr><th>Redirect URI</th><td>${oidcApp?.redirectUri || '未設定'}</td></tr>
         </table>
       `;
 
@@ -41,7 +49,7 @@
       const panel = renderLearningPanel({
         purpose: 'AdminがSAML-likeアプリ設定を確認するページ。',
         params: {},
-        generated: { app },
+        generated: { samlApp, oidcApp },
         validation: [],
         storageSnapshot: snapshotStorage(),
         logs: snapshotStorage().eventLog

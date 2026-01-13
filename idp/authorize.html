@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IdP Authorize (OIDC-like)</title>
+    <link rel="stylesheet" href="../assets/style.css" />
+  </head>
+  <body>
+    <main>
+      <h1>IdP /authorize (OIDC-like)</h1>
+      <p class="muted">/authorize相当のパラメータを検証し、認可コードを発行します。</p>
+      <div class="card stack" id="requestCard"></div>
+      <div class="card stack" id="validationCard"></div>
+      <div class="card stack">
+        <h2>ここで本来はユーザー同意(Consent)を行う</h2>
+        <p class="muted">学習用のため省略しています。</p>
+      </div>
+      <div class="card stack" id="codeCard"></div>
+    </main>
+    <script type="module">
+      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '../shared/ui.js';
+      import { getJson, resetAll, appendLog } from '../shared/storage.js';
+      import { randomId } from '../shared/crypto.js';
+
+      const basePath = '..';
+      renderHeader({ activeRole: 'idp', basePath });
+      if (!getJson('mockidp.apps')) {
+        resetAll();
+      }
+
+      const getSessionJson = (key, fallback = null) => {
+        const raw = sessionStorage.getItem(key);
+        if (!raw) {
+          return fallback;
+        }
+        try {
+          return JSON.parse(raw);
+        } catch (error) {
+          console.warn('Failed to parse session JSON', key, error);
+          return fallback;
+        }
+      };
+
+      const params = new URLSearchParams(window.location.search);
+      const request = {
+        response_type: params.get('response_type'),
+        scope: params.get('scope'),
+        client_id: params.get('client_id'),
+        redirect_uri: params.get('redirect_uri'),
+        state: params.get('state'),
+        nonce: params.get('nonce'),
+        appId: params.get('appId')
+      };
+
+      const sessionUserId = getJson('mockidp.idpSession');
+      if (!sessionUserId) {
+        const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.href = `./login.html?returnTo=${returnTo}`;
+      }
+
+      const apps = getJson('mockidp.apps', []);
+      const app = apps.find((item) => item.id === request.appId) ||
+        apps.find((item) => item.mode === 'oidc_like' && item.clientId === request.client_id);
+
+      const users = getJson('mockidp.users', []);
+      const user = users.find((u) => u.id === sessionUserId);
+
+      const requestCard = document.getElementById('requestCard');
+      requestCard.innerHTML = `
+        <h2>受け取ったパラメータ</h2>
+        <pre>${JSON.stringify(request, null, 2)}</pre>
+      `;
+
+      const checks = [
+        {
+          name: 'OIDCアプリ存在',
+          ok: Boolean(app && app.mode === 'oidc_like'),
+          detail: app ? `appId=${app.id}` : 'OIDCアプリが見つかりません'
+        },
+        {
+          name: 'client_id一致',
+          ok: Boolean(app && app.clientId === request.client_id),
+          detail: `expected=${app?.clientId || '-'} actual=${request.client_id}`
+        },
+        {
+          name: 'redirect_uri一致',
+          ok: Boolean(app && app.redirectUri === request.redirect_uri),
+          detail: `expected=${app?.redirectUri || '-'} actual=${request.redirect_uri}`
+        },
+        {
+          name: 'response_type=code',
+          ok: request.response_type === 'code',
+          detail: `actual=${request.response_type}`
+        },
+        {
+          name: 'scope=openid',
+          ok: request.scope?.includes('openid'),
+          detail: `actual=${request.scope}`
+        }
+      ];
+
+      const validationCard = document.getElementById('validationCard');
+      validationCard.innerHTML = `
+        <h2>クライアント検証</h2>
+        <div>${checks
+          .map((check) => {
+            return `<div><span class="badge ${check.ok ? 'success' : 'fail'}">${check.ok ? 'OK' : 'NG'}</span> <strong>${check.name}</strong> <span class="muted">${check.detail || ''}</span></div>`;
+          })
+          .join('')}</div>
+      `;
+
+      const codeCard = document.getElementById('codeCard');
+      const canIssue = checks.every((check) => check.ok) && user;
+      if (!canIssue) {
+        codeCard.innerHTML = `
+          <h2>認可コード発行</h2>
+          <p class="notice">クライアント検証に失敗したため、コード発行できません。</p>
+          <a class="button secondary" href="./index.html">IdPホームへ戻る</a>
+        `;
+      } else {
+        const now = Math.floor(Date.now() / 1000);
+        const breakers = getSessionJson('mockidp.oidc.breakers', {});
+        const exp = breakers.shortExp ? now - 10 : now + 300;
+        const code = randomId('code');
+        const record = {
+          appId: app.id,
+          clientId: app.clientId,
+          redirectUri: app.redirectUri,
+          userId: user.id,
+          nonce: request.nonce,
+          iat: now,
+          exp,
+          used: false
+        };
+        const codes = getSessionJson('mockidp.oidc.codes', {});
+        codes[code] = record;
+        sessionStorage.setItem('mockidp.oidc.codes', JSON.stringify(codes));
+
+        codeCard.innerHTML = `
+          <h2>認可コード発行</h2>
+          <pre>${JSON.stringify({ code, ...record }, null, 2)}</pre>
+          <button class="button" id="redirectButton">redirect_uriへ戻る</button>
+        `;
+
+        document.getElementById('redirectButton').addEventListener('click', () => {
+          appendLog({ actor: 'idp', action: 'code_issued', detail: `client=${app.clientId}` });
+          const redirectUrl = new URL(request.redirect_uri, window.location.href);
+          redirectUrl.searchParams.set('code', code);
+          redirectUrl.searchParams.set('state', request.state || '');
+          redirectUrl.searchParams.set('appId', app.id);
+          window.location.replace(redirectUrl.toString());
+        });
+      }
+
+      const sessionSnapshot = {
+        ...snapshotStorage(),
+        oidcCodes: getSessionJson('mockidp.oidc.codes', {}),
+        oidcBreakers: getSessionJson('mockidp.oidc.breakers', {})
+      };
+
+      const panel = renderLearningPanel({
+        purpose: 'OIDC /authorize相当のパラメータを検証し、認可コードを発行してredirectする。',
+        params: request,
+        generated: { app, user },
+        validation: checks,
+        storageSnapshot: sessionSnapshot,
+        logs: sessionSnapshot.eventLog
+      });
+      const stepBar = renderStepBar('oidc', 3);
+      document.querySelector('main').insertBefore(stepBar, document.querySelector('main').children[2]);
+      document.querySelector('main').appendChild(panel);
+    </script>
+  </body>
+</html>

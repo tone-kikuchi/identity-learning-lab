@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SP Callback (OIDC-like)</title>
+    <link rel="stylesheet" href="../assets/style.css" />
+  </head>
+  <body>
+    <main>
+      <h1>SP Callback (OIDC-like)</h1>
+      <p class="muted">認可コードとstateを受け取り、疑似トークン交換を行います。</p>
+      <div class="card stack" id="inputCard"></div>
+      <div class="card stack" id="tokenCard"></div>
+      <div class="card stack" id="resultCard"></div>
+    </main>
+    <script type="module">
+      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '../shared/ui.js';
+      import { getJson, setJson, resetAll, appendLog } from '../shared/storage.js';
+
+      renderHeader({ activeRole: 'sp', basePath: '..' });
+      if (!getJson('mockidp.apps')) {
+        resetAll();
+      }
+
+      const getSessionJson = (key, fallback = null) => {
+        const raw = sessionStorage.getItem(key);
+        if (!raw) {
+          return fallback;
+        }
+        try {
+          return JSON.parse(raw);
+        } catch (error) {
+          console.warn('Failed to parse session JSON', key, error);
+          return fallback;
+        }
+      };
+
+      const params = new URLSearchParams(window.location.search);
+      const received = {
+        code: params.get('code'),
+        state: params.get('state'),
+        appId: params.get('appId')
+      };
+
+      const expected = getSessionJson('mockidp.oidc.expected', null);
+      const codes = getSessionJson('mockidp.oidc.codes', {});
+      const apps = getJson('mockidp.apps', []);
+      const app = apps.find((item) => item.id === received.appId) || apps.find((item) => item.mode === 'oidc_like');
+
+      const inputCard = document.getElementById('inputCard');
+      inputCard.innerHTML = `
+        <h2>入力（query）</h2>
+        <pre>${JSON.stringify(received, null, 2)}</pre>
+      `;
+
+      const codeRecord = received.code ? codes[received.code] : null;
+      const now = Math.floor(Date.now() / 1000);
+      const validation = [
+        {
+          name: 'state一致',
+          ok: Boolean(expected && received.state === expected.state),
+          detail: `expected=${expected?.state || '-'} actual=${received.state}`
+        },
+        {
+          name: 'code存在',
+          ok: Boolean(codeRecord),
+          detail: codeRecord ? 'code found' : 'code not found'
+        },
+        {
+          name: 'code未使用',
+          ok: Boolean(codeRecord && !codeRecord.used),
+          detail: `used=${codeRecord?.used}`
+        },
+        {
+          name: 'code期限内',
+          ok: Boolean(codeRecord && codeRecord.exp > now),
+          detail: `exp=${codeRecord?.exp} now=${now}`
+        },
+        {
+          name: 'client_id一致',
+          ok: Boolean(app && codeRecord && app.clientId === codeRecord.clientId),
+          detail: `expected=${app?.clientId || '-'} actual=${codeRecord?.clientId || '-'}`
+        },
+        {
+          name: 'redirect_uri一致',
+          ok: Boolean(app && codeRecord && app.redirectUri === codeRecord.redirectUri),
+          detail: `expected=${app?.redirectUri || '-'} actual=${codeRecord?.redirectUri || '-'}`
+        },
+        {
+          name: 'nonce一致',
+          ok: Boolean(expected && codeRecord && expected.nonce === codeRecord.nonce),
+          detail: `expected=${expected?.nonce || '-'} actual=${codeRecord?.nonce || '-'}`
+        }
+      ];
+
+      const ok = validation.every((check) => check.ok);
+      const tokenCard = document.getElementById('tokenCard');
+      const resultCard = document.getElementById('resultCard');
+      const breakers = getSessionJson('mockidp.oidc.breakers', {});
+      let idToken = null;
+      let user = null;
+
+      if (ok && codeRecord && app) {
+        codeRecord.used = true;
+        codes[received.code] = codeRecord;
+        sessionStorage.setItem('mockidp.oidc.codes', JSON.stringify(codes));
+
+        const users = getJson('mockidp.users', []);
+        user = users.find((item) => item.id === codeRecord.userId);
+        idToken = {
+          iss: 'mock-idp',
+          aud: app.clientId,
+          iat: now,
+          exp: now + 300,
+          nonce: codeRecord.nonce,
+          sub: codeRecord.userId,
+          email: user?.username,
+          name: user?.displayName,
+          groups: user?.groups
+        };
+
+        const sessions = getJson('mockidp.spSessions', {});
+        sessions[app.id] = {
+          ...idToken,
+          loginAt: new Date().toISOString()
+        };
+        setJson('mockidp.spSessions', sessions);
+        appendLog({ actor: 'sp', action: 'session_created', detail: `oidc app=${app.id}` });
+      } else {
+        appendLog({ actor: 'sp', action: 'validation_failed', detail: 'OIDC callback validation failed' });
+      }
+
+      tokenCard.innerHTML = `
+        <h2>疑似Token交換結果</h2>
+        <pre>${idToken ? JSON.stringify(idToken, null, 2) : '—'}</pre>
+      `;
+
+      resultCard.innerHTML = `
+        <h2>検証チェックリスト</h2>
+        <div>${validation
+          .map((check) => {
+            return `<div><span class="badge ${check.ok ? 'success' : 'fail'}">${check.ok ? 'OK' : 'NG'}</span> <strong>${check.name}</strong> <span class="muted">${check.detail || ''}</span></div>`;
+          })
+          .join('')}</div>
+      `;
+
+      if (breakers.reuseCode) {
+        resultCard.innerHTML += `
+          <div class="notice">code再利用テスト: used=true のため再交換は失敗します。</div>
+        `;
+      }
+
+      if (ok && app) {
+        resultCard.innerHTML += `
+          <p class="notice">検証成功。セッションを作成しました。</p>
+          <a class="button" href="./app.html?appId=${app.id}">保護ページへ進む</a>
+        `;
+      } else {
+        resultCard.innerHTML += `
+          <p class="notice">検証に失敗しました。戻ってやり直してください。</p>
+          <a class="button secondary" href="./login_oidc.html?appId=${app?.id || ''}">ログイン開始へ戻る</a>
+        `;
+      }
+
+      if (app) {
+        history.replaceState(null, '', `${window.location.pathname}?appId=${app.id}`);
+      }
+
+      const sessionSnapshot = {
+        ...snapshotStorage(),
+        oidcExpected: expected,
+        oidcCodes: codes,
+        oidcBreakers: breakers
+      };
+
+      const panel = renderLearningPanel({
+        purpose: 'callbackでcode/stateを検証し、疑似token交換でid_tokenを作成する。',
+        params: { expected, received },
+        generated: { idToken, user },
+        validation,
+        storageSnapshot: sessionSnapshot,
+        logs: sessionSnapshot.eventLog
+      });
+      const stepBar = renderStepBar('oidc', 4);
+      document.querySelector('main').insertBefore(stepBar, inputCard);
+      document.querySelector('main').appendChild(panel);
+    </script>
+  </body>
+</html>

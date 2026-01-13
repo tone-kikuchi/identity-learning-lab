@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SP Login Start (OIDC-like)</title>
+    <link rel="stylesheet" href="../assets/style.css" />
+  </head>
+  <body>
+    <main>
+      <h1>SP Login開始 (OIDC-like)</h1>
+      <p class="muted">SP initiated loginとして/authorizeにリダイレクトします。</p>
+      <div class="card stack">
+        <h2>送信予定のパラメータ</h2>
+        <pre id="requestPreview">Loading...</pre>
+      </div>
+      <div class="card stack">
+        <h2>壊すトグル</h2>
+        <label>
+          <input type="checkbox" id="toggleState" /> stateを改ざんする
+        </label>
+        <label>
+          <input type="checkbox" id="toggleNonce" /> nonceを空にする
+        </label>
+        <label>
+          <input type="checkbox" id="toggleReuse" /> codeを2回使う
+        </label>
+        <label>
+          <input type="checkbox" id="toggleExp" /> codeのexpを期限切れにする
+        </label>
+      </div>
+      <button class="button" id="toIdpButton">IdPへ移動</button>
+    </main>
+    <script type="module">
+      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '../shared/ui.js';
+      import { getJson, resetAll, appendLog } from '../shared/storage.js';
+      import { randomId } from '../shared/crypto.js';
+
+      const basePath = '..';
+      renderHeader({ activeRole: 'sp', basePath });
+      if (!getJson('mockidp.apps')) {
+        resetAll();
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const appId = params.get('appId');
+      const apps = getJson('mockidp.apps', []);
+      const app = apps.find((item) => item.id === appId) || apps.find((item) => item.mode === 'oidc_like');
+
+      const requestPreview = document.getElementById('requestPreview');
+      const toIdpButton = document.getElementById('toIdpButton');
+
+      const state = randomId('state');
+      const nonce = randomId('nonce');
+      const request = {
+        response_type: 'code',
+        scope: 'openid',
+        client_id: app?.clientId,
+        redirect_uri: app?.redirectUri,
+        state,
+        nonce,
+        appId: app?.id
+      };
+
+      if (!app) {
+        requestPreview.textContent = 'OIDC-likeアプリ設定がありません。Adminで追加してください。';
+        toIdpButton.disabled = true;
+      } else {
+        requestPreview.textContent = JSON.stringify(request, null, 2);
+      }
+
+      const toggleState = document.getElementById('toggleState');
+      const toggleNonce = document.getElementById('toggleNonce');
+      const toggleReuse = document.getElementById('toggleReuse');
+      const toggleExp = document.getElementById('toggleExp');
+
+      toIdpButton.addEventListener('click', () => {
+        if (!app) {
+          return;
+        }
+        const expected = {
+          appId: app.id,
+          state,
+          nonce,
+          createdAt: new Date().toISOString()
+        };
+        sessionStorage.setItem('mockidp.oidc.expected', JSON.stringify(expected));
+        sessionStorage.setItem('mockidp.oidc.breakers', JSON.stringify({
+          tamperState: toggleState.checked,
+          emptyNonce: toggleNonce.checked,
+          reuseCode: toggleReuse.checked,
+          shortExp: toggleExp.checked
+        }));
+
+        appendLog({ actor: 'sp', action: 'login_start', detail: `oidc client=${app.clientId}` });
+
+        const idpUrl = new URL(`${basePath}/idp/authorize.html`, window.location.href);
+        idpUrl.searchParams.set('response_type', 'code');
+        idpUrl.searchParams.set('scope', 'openid');
+        idpUrl.searchParams.set('client_id', app.clientId || '');
+        idpUrl.searchParams.set('redirect_uri', app.redirectUri || '');
+        idpUrl.searchParams.set('state', toggleState.checked ? `${state}_tampered` : state);
+        idpUrl.searchParams.set('nonce', toggleNonce.checked ? '' : nonce);
+        idpUrl.searchParams.set('appId', app.id || '');
+        window.location.href = idpUrl.toString();
+      });
+
+      const sessionSnapshot = {
+        ...snapshotStorage(),
+        oidcExpected: JSON.parse(sessionStorage.getItem('mockidp.oidc.expected') || 'null'),
+        oidcBreakers: JSON.parse(sessionStorage.getItem('mockidp.oidc.breakers') || 'null')
+      };
+
+      const panel = renderLearningPanel({
+        purpose: 'SP initiatedで/authorizeに送るパラメータを生成し、state/nonceを保存する。',
+        params: request,
+        generated: sessionSnapshot.oidcExpected,
+        validation: [],
+        storageSnapshot: sessionSnapshot,
+        logs: sessionSnapshot.eventLog
+      });
+      const stepBar = renderStepBar('oidc', 0);
+      document.querySelector('main').insertBefore(stepBar, document.querySelector('main').children[2]);
+      document.querySelector('main').appendChild(panel);
+    </script>
+  </body>
+</html>

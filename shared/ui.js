@@ -1,4 +1,4 @@
-import { samlSteps } from './models.js';
+import { samlSteps, oidcSteps } from './models.js';
 import { appendLog, resetAll, getJson } from './storage.js';
 
 export function renderHeader(activeRoleOrOptions = '', options = {}) {
@@ -34,7 +34,7 @@ export function renderHeader(activeRoleOrOptions = '', options = {}) {
 }
 
 export function renderStepBar(flow, currentStepIndex) {
-  const steps = flow === 'saml' ? samlSteps : [];
+  const steps = flow === 'saml' ? samlSteps : flow === 'oidc' ? oidcSteps : [];
   const wrapper = document.createElement('div');
   wrapper.className = 'stepbar';
   steps.forEach((label, index) => {

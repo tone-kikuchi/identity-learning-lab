@@ -11,11 +11,8 @@
       <h1>SP Home</h1>
       <p class="muted">SPとしてログイン開始/セッション確認を行います。</p>
       <div class="card" id="sessionCard"></div>
-      <div class="card" id="appCard"></div>
-      <div class="stack">
-        <a class="button" id="loginButton" href="./login_saml.html">SAMLでログイン</a>
-        <button class="button danger" id="logoutButton">ログアウト</button>
-      </div>
+      <div class="card stack" id="appCard"></div>
+      <div class="stack" id="actionStack"></div>
     </main>
     <script type="module">
       import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '../shared/ui.js';
@@ -26,39 +23,68 @@
         resetAll();
       }
 
-      const [app] = getJson('mockidp.apps', []);
+      const apps = getJson('mockidp.apps', []);
+      const samlApp = apps.find((item) => item.mode === 'saml_like');
+      const oidcApp = apps.find((item) => item.mode === 'oidc_like');
       const sessions = getJson('mockidp.spSessions', {});
-      const session = app ? sessions[app.id] : null;
+      const samlSession = samlApp ? sessions[samlApp.id] : null;
+      const oidcSession = oidcApp ? sessions[oidcApp.id] : null;
 
       const sessionCard = document.getElementById('sessionCard');
       sessionCard.innerHTML = `
         <h2>現在のセッション</h2>
-        <pre>${session ? JSON.stringify(session, null, 2) : '未ログイン'}</pre>
+        <pre>${JSON.stringify({ saml: samlSession || null, oidc: oidcSession || null }, null, 2)}</pre>
       `;
 
       const appCard = document.getElementById('appCard');
       appCard.innerHTML = `
         <h2>アプリ選択</h2>
-        <p><strong>${app?.name || '未設定'}</strong></p>
-        <p class="muted">SP Entity ID: ${app?.spEntityId || '-'}</p>
+        <div>
+          <h3>SAML-like</h3>
+          <p><strong>${samlApp?.name || '未設定'}</strong></p>
+          <p class="muted">SP Entity ID: ${samlApp?.spEntityId || '-'}</p>
+        </div>
+        <div>
+          <h3>OIDC-like</h3>
+          <p><strong>${oidcApp?.name || '未設定'}</strong></p>
+          <p class="muted">Client ID: ${oidcApp?.clientId || '-'}</p>
+        </div>
       `;
 
-      document.getElementById('loginButton').href = `./login_saml.html?appId=${app?.id || ''}`;
-      document.getElementById('logoutButton').addEventListener('click', () => {
-        if (!app) {
+      const actionStack = document.getElementById('actionStack');
+      actionStack.innerHTML = `
+        <a class="button" href="./login_saml.html?appId=${samlApp?.id || ''}">SAMLでログイン</a>
+        <a class="button" href="./login_oidc.html?appId=${oidcApp?.id || ''}">OIDCでログイン</a>
+        <button class="button danger" id="logoutSaml">SAMLをログアウト</button>
+        <button class="button danger" id="logoutOidc">OIDCをログアウト</button>
+      `;
+
+      document.getElementById('logoutSaml').addEventListener('click', () => {
+        if (!samlApp) {
           return;
         }
         const next = { ...sessions };
-        delete next[app.id];
+        delete next[samlApp.id];
         setJson('mockidp.spSessions', next);
-        appendLog({ actor: 'sp', action: 'logout', detail: `app=${app.id}` });
+        appendLog({ actor: 'sp', action: 'logout', detail: `app=${samlApp.id}` });
+        window.location.reload();
+      });
+
+      document.getElementById('logoutOidc').addEventListener('click', () => {
+        if (!oidcApp) {
+          return;
+        }
+        const next = { ...sessions };
+        delete next[oidcApp.id];
+        setJson('mockidp.spSessions', next);
+        appendLog({ actor: 'sp', action: 'logout', detail: `app=${oidcApp.id}` });
         window.location.reload();
       });
 
       const panel = renderLearningPanel({
         purpose: 'SP側でログイン開始やセッションの有無を確認する。',
-        params: { appId: app?.id },
-        generated: { session },
+        params: { samlAppId: samlApp?.id, oidcAppId: oidcApp?.id },
+        generated: { samlSession, oidcSession },
         validation: [],
         storageSnapshot: snapshotStorage(),
         logs: snapshotStorage().eventLog
