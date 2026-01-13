@@ -106,8 +106,8 @@
         }));
 
         const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = app.acsUrl || `${basePath}/sp/acs_receive.html`;
+        const actionUrl = app.acsUrl || `${basePath}/sp/acs_receive.html`;
+        form.action = actionUrl;
 
         const responseInput = document.createElement('input');
         responseInput.type = 'hidden';
@@ -127,6 +127,15 @@
         appInput.value = request.appId;
         form.appendChild(appInput);
 
+        const parsedAction = new URL(form.action, window.location.href);
+        const isSameOrigin = parsedAction.origin === window.location.origin;
+        const isStaticHtml = parsedAction.pathname.endsWith('.html');
+        if (isSameOrigin && isStaticHtml) {
+          window.location.href = parsedAction.toString();
+          return;
+        }
+
+        form.method = 'POST';
         document.body.appendChild(form);
         form.submit();
       });
