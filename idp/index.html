@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>IdP Home</title>
-    <link rel="stylesheet" href="/assets/style.css" />
+    <link rel="stylesheet" href="../assets/style.css" />
   </head>
   <body>
     <main>
@@ -12,15 +12,15 @@
       <p class="muted">IdP側のログイン状態やSSO開始を確認します。</p>
       <div class="card" id="sessionCard"></div>
       <div class="stack">
-        <a class="button" href="/idp/login.html">ログイン（ユーザー選択）</a>
-        <a class="button secondary" href="/sp/login_saml.html">SP Login開始へ</a>
+        <a class="button" href="./login.html">ログイン（ユーザー選択）</a>
+        <a class="button secondary" href="../sp/login_saml.html">SP Login開始へ</a>
       </div>
     </main>
     <script type="module">
-      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '/shared/ui.js';
-      import { getJson, resetAll } from '/shared/storage.js';
+      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '../shared/ui.js';
+      import { getJson, resetAll } from '../shared/storage.js';
 
-      renderHeader('idp');
+      renderHeader({ activeRole: 'idp', basePath: '..' });
       if (!getJson('mockidp.users')) {
         resetAll();
       }

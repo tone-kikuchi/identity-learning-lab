@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SP Protected App</title>
-    <link rel="stylesheet" href="/assets/style.css" />
+    <link rel="stylesheet" href="../assets/style.css" />
   </head>
   <body>
     <main>
@@ -13,7 +13,7 @@
       <div class="card" id="sessionCard"></div>
       <div class="stack">
         <button class="button danger" id="logoutButton">ログアウト</button>
-        <a class="button secondary" href="/sp/">SPホームへ戻る</a>
+        <a class="button secondary" href="./index.html">SPホームへ戻る</a>
       </div>
       <div class="card">
         <h2>今回のフローまとめ</h2>
@@ -27,10 +27,10 @@
       </div>
     </main>
     <script type="module">
-      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '/shared/ui.js';
-      import { getJson, setJson, resetAll, appendLog } from '/shared/storage.js';
+      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '../shared/ui.js';
+      import { getJson, setJson, resetAll, appendLog } from '../shared/storage.js';
 
-      renderHeader('sp');
+      renderHeader({ activeRole: 'sp', basePath: '..' });
       if (!getJson('mockidp.apps')) {
         resetAll();
       }
@@ -42,7 +42,7 @@
       const session = app ? sessions[app.id] : null;
 
       if (!session) {
-        window.location.href = '/sp/';
+        window.location.href = './index.html';
       }
 
       document.getElementById('sessionCard').innerHTML = `
@@ -58,7 +58,7 @@
         delete next[app.id];
         setJson('mockidp.spSessions', next);
         appendLog({ actor: 'sp', action: 'logout', detail: `app=${app.id}` });
-        window.location.href = '/sp/';
+        window.location.href = './index.html';
       });
 
       const panel = renderLearningPanel({

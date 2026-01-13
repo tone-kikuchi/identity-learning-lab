@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SP Login Start</title>
-    <link rel="stylesheet" href="/assets/style.css" />
+    <link rel="stylesheet" href="../assets/style.css" />
   </head>
   <body>
     <main>
@@ -22,11 +22,12 @@
       <button class="button" id="toIdpButton">IdPへ移動</button>
     </main>
     <script type="module">
-      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '/shared/ui.js';
-      import { getJson, resetAll, appendLog } from '/shared/storage.js';
-      import { randomId } from '/shared/crypto.js';
+      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '../shared/ui.js';
+      import { getJson, resetAll, appendLog } from '../shared/storage.js';
+      import { randomId } from '../shared/crypto.js';
 
-      renderHeader('sp');
+      const basePath = '..';
+      renderHeader({ activeRole: 'sp', basePath });
       if (!getJson('mockidp.apps')) {
         resetAll();
       }
@@ -56,7 +57,7 @@
           relayState: expectedRelay
         }));
         appendLog({ actor: 'sp', action: 'login_start', detail: `requestId=${requestId}` });
-        const idpUrl = new URL('/idp/sso_saml.html', window.location.origin);
+        const idpUrl = new URL(`${basePath}/idp/sso_saml.html`, window.location.href);
         idpUrl.searchParams.set('appId', app?.id || '');
         idpUrl.searchParams.set('acs', app?.acsUrl || '');
         idpUrl.searchParams.set('spEntityId', app?.spEntityId || '');

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Identity Learning Lab</title>
-    <link rel="stylesheet" href="/assets/style.css" />
+    <link rel="stylesheet" href="./assets/style.css" />
   </head>
   <body>
     <main>
@@ -14,17 +14,17 @@
         <div class="card">
           <h2>Admin</h2>
           <p>アプリ設定（SP Entity IDや共有鍵など）を編集します。</p>
-          <a class="button" href="/admin/">管理画面へ</a>
+          <a class="button" href="./admin/index.html">管理画面へ</a>
         </div>
         <div class="card">
           <h2>IdP</h2>
           <p>ユーザー認証とSAML-likeアサーション生成を行います。</p>
-          <a class="button" href="/idp/">IdPへ</a>
+          <a class="button" href="./idp/index.html">IdPへ</a>
         </div>
         <div class="card">
           <h2>SP</h2>
           <p>ログイン開始からACS検証までの流れを確認します。</p>
-          <a class="button" href="/sp/">SPへ</a>
+          <a class="button" href="./sp/index.html">SPへ</a>
         </div>
       </div>
       <div class="card">
@@ -39,10 +39,10 @@
       </div>
     </main>
     <script type="module">
-      import { renderHeader, renderLearningPanel, snapshotStorage } from '/shared/ui.js';
-      import { getJson, resetAll, appendLog } from '/shared/storage.js';
+      import { renderHeader, renderLearningPanel, snapshotStorage } from './shared/ui.js';
+      import { getJson, resetAll, appendLog } from './shared/storage.js';
 
-      renderHeader('home');
+      renderHeader({ activeRole: 'home', basePath: '.' });
       if (!getJson('mockidp.apps')) {
         resetAll();
         appendLog({ actor: 'system', action: 'init', detail: 'seed sample data' });

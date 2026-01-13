@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Home</title>
-    <link rel="stylesheet" href="/assets/style.css" />
+    <link rel="stylesheet" href="../assets/style.css" />
   </head>
   <body>
     <main>
@@ -12,15 +12,15 @@
       <p class="muted">SAML-likeアプリ設定の概要を確認します。</p>
       <div class="card stack" id="appSummary"></div>
       <div class="stack">
-        <a class="button" href="/admin/app_edit.html">アプリ設定を編集</a>
-        <a class="button secondary" href="/sp/login_saml.html">SP > Login開始へ</a>
+        <a class="button" href="./app_edit.html">アプリ設定を編集</a>
+        <a class="button secondary" href="../sp/login_saml.html">SP > Login開始へ</a>
       </div>
     </main>
     <script type="module">
-      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '/shared/ui.js';
-      import { getJson, resetAll, appendLog } from '/shared/storage.js';
+      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '../shared/ui.js';
+      import { getJson, resetAll, appendLog } from '../shared/storage.js';
 
-      renderHeader('admin');
+      renderHeader({ activeRole: 'admin', basePath: '..' });
       if (!getJson('mockidp.apps')) {
         resetAll();
       }

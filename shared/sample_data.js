@@ -5,7 +5,7 @@ export function sampleApps() {
       name: 'Sample SAML App',
       mode: 'saml_like',
       spEntityId: 'sp.sample',
-      acsUrl: '/sp/acs_receive.html',
+      acsUrl: '../sp/acs_receive.html',
       sharedSecret: 'dev-secret-change-me'
     }
   ];

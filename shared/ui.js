@@ -1,15 +1,25 @@
 import { samlSteps } from './models.js';
 import { appendLog, resetAll, getJson } from './storage.js';
 
-export function renderHeader(activeRole = '') {
+export function renderHeader(activeRoleOrOptions = '', options = {}) {
+  let activeRole = '';
+  let basePath = '.';
+  if (typeof activeRoleOrOptions === 'object' && activeRoleOrOptions !== null) {
+    ({ activeRole = '', basePath = '.' } = activeRoleOrOptions);
+  } else {
+    activeRole = activeRoleOrOptions;
+    basePath = options.basePath ?? '.';
+  }
+  const normalizedBasePath = basePath.endsWith('/') ? basePath.slice(0, -1) : basePath;
+  const resolvedBasePath = normalizedBasePath || '.';
   const header = document.createElement('header');
   header.innerHTML = `
     <div class="header-inner">
       <div class="nav-links">
-        <a href="/" class="${activeRole === 'home' ? 'active' : ''}">Home</a>
-        <a href="/admin/" class="${activeRole === 'admin' ? 'active' : ''}">Admin</a>
-        <a href="/idp/" class="${activeRole === 'idp' ? 'active' : ''}">IdP</a>
-        <a href="/sp/" class="${activeRole === 'sp' ? 'active' : ''}">SP</a>
+        <a href="${resolvedBasePath}/index.html" class="${activeRole === 'home' ? 'active' : ''}">Home</a>
+        <a href="${resolvedBasePath}/admin/index.html" class="${activeRole === 'admin' ? 'active' : ''}">Admin</a>
+        <a href="${resolvedBasePath}/idp/index.html" class="${activeRole === 'idp' ? 'active' : ''}">IdP</a>
+        <a href="${resolvedBasePath}/sp/index.html" class="${activeRole === 'sp' ? 'active' : ''}">SP</a>
       </div>
       <button class="button secondary" id="resetButton">Reset</button>
     </div>
