@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SP Protected App</title>
+    <link rel="stylesheet" href="/assets/style.css" />
+  </head>
+  <body>
+    <main>
+      <h1>保護ページ</h1>
+      <p class="muted">ログイン済みのユーザーのみ表示されるページです。</p>
+      <div class="card" id="sessionCard"></div>
+      <div class="stack">
+        <button class="button danger" id="logoutButton">ログアウト</button>
+        <a class="button secondary" href="/sp/">SPホームへ戻る</a>
+      </div>
+      <div class="card">
+        <h2>今回のフローまとめ</h2>
+        <ol>
+          <li>SPがログイン開始</li>
+          <li>IdPでユーザー認証</li>
+          <li>IdPがアサーションを生成</li>
+          <li>SPのACSで検証</li>
+          <li>SPセッション作成</li>
+        </ol>
+      </div>
+    </main>
+    <script type="module">
+      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '/shared/ui.js';
+      import { getJson, setJson, resetAll, appendLog } from '/shared/storage.js';
+
+      renderHeader('sp');
+      if (!getJson('mockidp.apps')) {
+        resetAll();
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const appId = params.get('appId');
+      const [app] = getJson('mockidp.apps', []).filter((item) => item.id === appId);
+      const sessions = getJson('mockidp.spSessions', {});
+      const session = app ? sessions[app.id] : null;
+
+      if (!session) {
+        window.location.href = '/sp/';
+      }
+
+      document.getElementById('sessionCard').innerHTML = `
+        <h2>セッション情報</h2>
+        <pre>${JSON.stringify(session, null, 2)}</pre>
+      `;
+
+      document.getElementById('logoutButton').addEventListener('click', () => {
+        if (!app) {
+          return;
+        }
+        const next = { ...sessions };
+        delete next[app.id];
+        setJson('mockidp.spSessions', next);
+        appendLog({ actor: 'sp', action: 'logout', detail: `app=${app.id}` });
+        window.location.href = '/sp/';
+      });
+
+      const panel = renderLearningPanel({
+        purpose: 'ログイン成功後のみ表示される保護ページ。',
+        params: { appId },
+        generated: { session },
+        validation: [],
+        storageSnapshot: snapshotStorage(),
+        logs: snapshotStorage().eventLog
+      });
+      const stepBar = renderStepBar('saml', 5);
+      document.querySelector('main').insertBefore(stepBar, document.querySelector('main').children[2]);
+      document.querySelector('main').appendChild(panel);
+    </script>
+  </body>
+</html>

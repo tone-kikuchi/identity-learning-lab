@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Identity Learning Lab</title>
+    <link rel="stylesheet" href="/assets/style.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Identity Learning Lab</h1>
+      <p class="muted">SAML-likeフローをブラウザだけで体験する学習用デモです。</p>
+      <div class="card-grid">
+        <div class="card">
+          <h2>Admin</h2>
+          <p>アプリ設定（SP Entity IDや共有鍵など）を編集します。</p>
+          <a class="button" href="/admin/">管理画面へ</a>
+        </div>
+        <div class="card">
+          <h2>IdP</h2>
+          <p>ユーザー認証とSAML-likeアサーション生成を行います。</p>
+          <a class="button" href="/idp/">IdPへ</a>
+        </div>
+        <div class="card">
+          <h2>SP</h2>
+          <p>ログイン開始からACS検証までの流れを確認します。</p>
+          <a class="button" href="/sp/">SPへ</a>
+        </div>
+      </div>
+      <div class="card">
+        <h2>このデモの流れ</h2>
+        <ol>
+          <li>AdminでSAML-likeアプリ設定</li>
+          <li>SPでLogin開始（IdPへリダイレクト）</li>
+          <li>IdPでユーザー認証</li>
+          <li>IdPがアサーション生成してSPへ送信</li>
+          <li>SPのACSが検証してセッション作成</li>
+        </ol>
+      </div>
+    </main>
+    <script type="module">
+      import { renderHeader, renderLearningPanel, snapshotStorage } from '/shared/ui.js';
+      import { getJson, resetAll, appendLog } from '/shared/storage.js';
+
+      renderHeader('home');
+      if (!getJson('mockidp.apps')) {
+        resetAll();
+        appendLog({ actor: 'system', action: 'init', detail: 'seed sample data' });
+      }
+
+      const panel = renderLearningPanel({
+        purpose: '入口ページ。Admin / IdP / SP のいずれに進むかを選びます。',
+        params: {},
+        generated: {},
+        validation: [],
+        storageSnapshot: snapshotStorage(),
+        logs: snapshotStorage().eventLog
+      });
+      document.querySelector('main').appendChild(panel);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Home</title>
+    <link rel="stylesheet" href="/assets/style.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Admin Home</h1>
+      <p class="muted">SAML-likeアプリ設定の概要を確認します。</p>
+      <div class="card stack" id="appSummary"></div>
+      <div class="stack">
+        <a class="button" href="/admin/app_edit.html">アプリ設定を編集</a>
+        <a class="button secondary" href="/sp/login_saml.html">SP > Login開始へ</a>
+      </div>
+    </main>
+    <script type="module">
+      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '/shared/ui.js';
+      import { getJson, resetAll, appendLog } from '/shared/storage.js';
+
+      renderHeader('admin');
+      if (!getJson('mockidp.apps')) {
+        resetAll();
+      }
+
+      const [app] = getJson('mockidp.apps', []);
+      const summary = document.getElementById('appSummary');
+      summary.innerHTML = `
+        <h2>現在のアプリ設定</h2>
+        <table class="table">
+          <tr><th>Name</th><td>${app?.name || '未設定'}</td></tr>
+          <tr><th>SP Entity ID</th><td>${app?.spEntityId || '未設定'}</td></tr>
+          <tr><th>ACS URL</th><td>${app?.acsUrl || '未設定'}</td></tr>
+        </table>
+      `;
+
+      appendLog({ actor: 'admin', action: 'view', detail: 'admin home viewed' });
+
+      const panel = renderLearningPanel({
+        purpose: 'AdminがSAML-likeアプリ設定を確認するページ。',
+        params: {},
+        generated: { app },
+        validation: [],
+        storageSnapshot: snapshotStorage(),
+        logs: snapshotStorage().eventLog
+      });
+      const stepBar = renderStepBar('saml', 0);
+      document.querySelector('main').insertBefore(stepBar, summary);
+      document.querySelector('main').appendChild(panel);
+    </script>
+  </body>
+</html>

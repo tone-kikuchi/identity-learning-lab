@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SP Login Start</title>
+    <link rel="stylesheet" href="/assets/style.css" />
+  </head>
+  <body>
+    <main>
+      <h1>SP Login開始 (SAML-like)</h1>
+      <p class="muted">SP initiated loginとしてIdPにリダイレクトします。</p>
+      <div class="card stack">
+        <h2>送信予定のパラメータ</h2>
+        <pre id="requestPreview">Loading...</pre>
+      </div>
+      <div class="card stack">
+        <label>
+          <input type="checkbox" id="toggleRelay" /> RelayStateを壊す
+        </label>
+      </div>
+      <button class="button" id="toIdpButton">IdPへ移動</button>
+    </main>
+    <script type="module">
+      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '/shared/ui.js';
+      import { getJson, resetAll, appendLog } from '/shared/storage.js';
+      import { randomId } from '/shared/crypto.js';
+
+      renderHeader('sp');
+      if (!getJson('mockidp.apps')) {
+        resetAll();
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const appId = params.get('appId') || getJson('mockidp.apps', [])[0]?.id;
+      const [app] = getJson('mockidp.apps', []).filter((item) => item.id === appId);
+
+      const requestId = randomId('req');
+      const relayState = randomId('relay');
+      const request = {
+        appId: app?.id,
+        acs: app?.acsUrl,
+        spEntityId: app?.spEntityId,
+        requestId,
+        relayState
+      };
+      document.getElementById('requestPreview').textContent = JSON.stringify(request, null, 2);
+
+      const toggleRelay = document.getElementById('toggleRelay');
+      document.getElementById('toIdpButton').addEventListener('click', () => {
+        const expectedRelay = relayState;
+        const actualRelay = toggleRelay.checked ? `${relayState}_wrong` : relayState;
+        sessionStorage.setItem('mockidp.expected', JSON.stringify({
+          appId: app?.id,
+          requestId,
+          relayState: expectedRelay
+        }));
+        appendLog({ actor: 'sp', action: 'login_start', detail: `requestId=${requestId}` });
+        const idpUrl = new URL('/idp/sso_saml.html', window.location.origin);
+        idpUrl.searchParams.set('appId', app?.id || '');
+        idpUrl.searchParams.set('acs', app?.acsUrl || '');
+        idpUrl.searchParams.set('spEntityId', app?.spEntityId || '');
+        idpUrl.searchParams.set('requestId', requestId);
+        idpUrl.searchParams.set('relayState', actualRelay);
+        window.location.href = idpUrl.toString();
+      });
+
+      const panel = renderLearningPanel({
+        purpose: 'SP initiated loginとしてAuthnRequest相当のパラメータを作りIdPへリダイレクトする。',
+        params: request,
+        generated: { expectedStored: sessionStorage.getItem('mockidp.expected') },
+        validation: [],
+        storageSnapshot: snapshotStorage(),
+        logs: snapshotStorage().eventLog
+      });
+      const stepBar = renderStepBar('saml', 0);
+      document.querySelector('main').insertBefore(stepBar, document.querySelector('main').children[2]);
+      document.querySelector('main').appendChild(panel);
+    </script>
+  </body>
+</html>

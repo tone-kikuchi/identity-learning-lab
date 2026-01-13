@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SP ACS Receive</title>
+    <link rel="stylesheet" href="/assets/style.css" />
+  </head>
+  <body>
+    <main>
+      <h1>ACS 受信中継ページ</h1>
+      <p class="muted">POSTされたSAMLResponseを読み取り、検証ページに引き渡します。</p>
+      <div class="card stack" id="statusCard">
+        <p>受信内容を読み取り中...</p>
+      </div>
+      <form id="postedForm">
+        <input type="hidden" name="SAMLResponse" />
+        <input type="hidden" name="RelayState" />
+        <input type="hidden" name="appId" />
+      </form>
+    </main>
+    <script type="module">
+      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '/shared/ui.js';
+      import { appendLog, getJson, resetAll } from '/shared/storage.js';
+
+      renderHeader('sp');
+      if (!getJson('mockidp.apps')) {
+        resetAll();
+      }
+
+      const statusCard = document.getElementById('statusCard');
+      const form = document.getElementById('postedForm');
+
+      function readPostValues() {
+        const values = {
+          SAMLResponse: form.elements.SAMLResponse?.value,
+          RelayState: form.elements.RelayState?.value,
+          appId: form.elements.appId?.value
+        };
+        if (!values.SAMLResponse) {
+          const fallback = sessionStorage.getItem('mockidp.lastPost');
+          if (fallback) {
+            Object.assign(values, JSON.parse(fallback));
+          }
+        }
+        return values;
+      }
+
+      const received = readPostValues();
+      sessionStorage.setItem('mockidp.received', JSON.stringify(received));
+      appendLog({ actor: 'sp', action: 'acs_receive', detail: 'received SAMLResponse' });
+
+      statusCard.innerHTML = `
+        <h2>受信内容</h2>
+        <pre>${JSON.stringify(received, null, 2)}</pre>
+        <p class="muted">検証ページへ遷移します。</p>
+      `;
+
+      setTimeout(() => {
+        const nextUrl = new URL('/sp/acs.html', window.location.origin);
+        if (received.appId) {
+          nextUrl.searchParams.set('appId', received.appId);
+        }
+        window.location.href = nextUrl.toString();
+      }, 600);
+
+      const panel = renderLearningPanel({
+        purpose: 'POSTされたSAMLResponseを読み取り、sessionStorageに保存してACS検証画面へ渡す。',
+        params: {},
+        generated: received,
+        validation: [],
+        storageSnapshot: snapshotStorage(),
+        logs: snapshotStorage().eventLog
+      });
+      const stepBar = renderStepBar('saml', 4);
+      document.querySelector('main').insertBefore(stepBar, document.querySelector('main').children[2]);
+      document.querySelector('main').appendChild(panel);
+    </script>
+  </body>
+</html>

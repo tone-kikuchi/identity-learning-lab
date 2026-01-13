@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IdP SSO (SAML-like)</title>
+    <link rel="stylesheet" href="/assets/style.css" />
+  </head>
+  <body>
+    <main>
+      <h1>IdP SSO (SAML-like)</h1>
+      <p class="muted">AuthnRequest相当を受け、Assertionを生成してACSへ送信します。</p>
+      <div class="card stack" id="requestCard"></div>
+      <div class="card stack">
+        <h2>壊すトグル (MVP+)</h2>
+        <label><input type="checkbox" id="toggleExp" /> expを過去にする</label>
+        <label><input type="checkbox" id="toggleAud" /> audienceをずらす</label>
+        <label><input type="checkbox" id="toggleSig" /> sharedSecretを間違える</label>
+      </div>
+      <div class="card stack">
+        <h2>生成するSAMLResponseプレビュー</h2>
+        <pre id="payloadPreview">Loading...</pre>
+        <button class="button" id="sendButton">Generate & POST</button>
+      </div>
+    </main>
+    <script type="module">
+      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage } from '/shared/ui.js';
+      import { getJson, resetAll, appendLog } from '/shared/storage.js';
+      import { buildSamlLikeResponse } from '/shared/protocol_saml_like.js';
+
+      renderHeader('idp');
+      if (!getJson('mockidp.apps')) {
+        resetAll();
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const request = {
+        appId: params.get('appId'),
+        acs: params.get('acs'),
+        spEntityId: params.get('spEntityId'),
+        requestId: params.get('requestId'),
+        relayState: params.get('relayState')
+      };
+
+      const sessionUserId = getJson('mockidp.idpSession');
+      if (!sessionUserId) {
+        const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.href = `/idp/login.html?returnTo=${returnTo}`;
+      }
+
+      const [app] = getJson('mockidp.apps', []);
+      const users = getJson('mockidp.users', []);
+      const user = users.find((u) => u.id === sessionUserId);
+
+      document.getElementById('requestCard').innerHTML = `
+        <h2>受け取ったパラメータ</h2>
+        <pre>${JSON.stringify(request, null, 2)}</pre>
+      `;
+
+      const preview = document.getElementById('payloadPreview');
+      const toggles = {
+        exp: document.getElementById('toggleExp'),
+        aud: document.getElementById('toggleAud'),
+        sig: document.getElementById('toggleSig')
+      };
+
+      async function updatePreview() {
+        const overrides = {};
+        if (toggles.exp.checked) {
+          overrides.exp = Math.floor(Date.now() / 1000) - 10;
+        }
+        if (toggles.aud.checked) {
+          overrides.aud = 'sp.wrong';
+        }
+        const overrideApp = {
+          ...app,
+          sharedSecret: toggles.sig.checked ? 'wrong-secret' : app.sharedSecret
+        };
+        const { payloadObj } = await buildSamlLikeResponse({ app: overrideApp, user, request, overrides });
+        preview.textContent = JSON.stringify(payloadObj, null, 2);
+      }
+
+      Object.values(toggles).forEach((toggle) => toggle.addEventListener('change', updatePreview));
+      updatePreview();
+
+      document.getElementById('sendButton').addEventListener('click', async () => {
+        const overrides = {};
+        if (toggles.exp.checked) {
+          overrides.exp = Math.floor(Date.now() / 1000) - 10;
+        }
+        if (toggles.aud.checked) {
+          overrides.aud = 'sp.wrong';
+        }
+        const overrideApp = {
+          ...app,
+          sharedSecret: toggles.sig.checked ? 'wrong-secret' : app.sharedSecret
+        };
+        const { payloadObj, b64 } = await buildSamlLikeResponse({ app: overrideApp, user, request, overrides });
+        appendLog({ actor: 'idp', action: 'assertion', detail: `SAMLResponse for ${user.username}` });
+
+        sessionStorage.setItem('mockidp.lastPost', JSON.stringify({
+          SAMLResponse: b64,
+          RelayState: request.relayState,
+          appId: request.appId
+        }));
+
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = app.acsUrl || '/sp/acs_receive.html';
+
+        const responseInput = document.createElement('input');
+        responseInput.type = 'hidden';
+        responseInput.name = 'SAMLResponse';
+        responseInput.value = b64;
+        form.appendChild(responseInput);
+
+        const relayInput = document.createElement('input');
+        relayInput.type = 'hidden';
+        relayInput.name = 'RelayState';
+        relayInput.value = request.relayState;
+        form.appendChild(relayInput);
+
+        const appInput = document.createElement('input');
+        appInput.type = 'hidden';
+        appInput.name = 'appId';
+        appInput.value = request.appId;
+        form.appendChild(appInput);
+
+        document.body.appendChild(form);
+        form.submit();
+      });
+
+      const panel = renderLearningPanel({
+        purpose: 'AuthnRequest相当を受信し、SAMLResponse相当を生成してSPのACSへ送信する。',
+        params: request,
+        generated: { user },
+        validation: [],
+        storageSnapshot: snapshotStorage(),
+        logs: snapshotStorage().eventLog
+      });
+      const stepBar = renderStepBar('saml', 3);
+      document.querySelector('main').insertBefore(stepBar, document.querySelector('main').children[2]);
+      document.querySelector('main').appendChild(panel);
+    </script>
+  </body>
+</html>
