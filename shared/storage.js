@@ -102,7 +102,44 @@ export function ensureDemoSeed(demo) {
   const hasUsers = Array.isArray(users) && users.length > 0;
   if (!hasApps || !hasUsers) {
     resetDemo(normalized);
+    return;
   }
+  const normalizedApps = applyDefaultAppValues(normalized, apps);
+  if (normalizedApps !== apps) {
+    setJson(normalized, 'apps', normalizedApps);
+  }
+}
+
+function applyDefaultAppValues(demo, apps) {
+  if (!Array.isArray(apps)) {
+    return apps;
+  }
+  const seed = demo === 'saml' ? seedSamlDemo() : seedOidcDemo();
+  const defaults = seed.apps[0];
+  let updated = false;
+  const nextApps = apps.map((app) => {
+    if (!app || app.mode !== defaults.mode) {
+      return app;
+    }
+    const nextApp = {
+      ...app,
+      id: app.id || defaults.id,
+      name: app.name || defaults.name
+    };
+    if (defaults.mode === 'saml_like') {
+      nextApp.spEntityId = app.spEntityId || defaults.spEntityId;
+      nextApp.acsUrl = app.acsUrl || defaults.acsUrl;
+      nextApp.sharedSecret = app.sharedSecret || defaults.sharedSecret;
+    } else {
+      nextApp.clientId = app.clientId || defaults.clientId;
+      nextApp.redirectUri = app.redirectUri || defaults.redirectUri;
+    }
+    if (JSON.stringify(nextApp) !== JSON.stringify(app)) {
+      updated = true;
+    }
+    return nextApp;
+  });
+  return updated ? nextApps : apps;
 }
 
 export function appendLog(demo, event) {
