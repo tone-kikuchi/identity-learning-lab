@@ -66,6 +66,18 @@ SAML と OIDC のデータは localStorage / sessionStorage の名前空間で�
 4. `idp/authorize.html?demo=oidc` でコード発行が行われます。
 5. `sp/callback.html?demo=oidc` で state/code を検証し、疑似 token 交換の結果を確認します。
 
+## Testing
+
+ローカルでユニットテストとE2Eテストを実行できます。
+
+1. 依存関係をインストールします。
+   - `npm install`
+2. ユニットテストを実行します。
+   - `npm test`
+3. E2Eテストを実行します（初回は Playwright のブラウザをインストール）。
+   - `npx playwright install --with-deps`
+   - `npm run test:e2e:ci`
+
 ## Contributing
 
 - 構成やワークフローに変更がある場合はドキュメントを更新してください。
