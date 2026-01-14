@@ -44,6 +44,77 @@
       </div>
 
       <div class="card">
+        <h2>シーケンス図で見る流れ</h2>
+        <p class="muted">SAML-likeとOIDC-likeそれぞれの主要なメッセージのやり取りを簡略化して示しています。</p>
+        <div class="card-grid">
+          <div class="card">
+            <h3>SAML-like シーケンス</h3>
+            <div class="sequence-diagram">
+              <div class="sequence-row">
+                <span class="sequence-actor">SP</span>
+                <span class="sequence-arrow">→</span>
+                <span class="sequence-actor">IdP</span>
+                <span class="sequence-detail">AuthnRequest を送信</span>
+              </div>
+              <div class="sequence-row">
+                <span class="sequence-actor">IdP</span>
+                <span class="sequence-arrow">→</span>
+                <span class="sequence-actor">ユーザー</span>
+                <span class="sequence-detail">認証・ユーザー選択</span>
+              </div>
+              <div class="sequence-row">
+                <span class="sequence-actor">IdP</span>
+                <span class="sequence-arrow">→</span>
+                <span class="sequence-actor">SP</span>
+                <span class="sequence-detail">SAML Response (Assertion)</span>
+              </div>
+              <div class="sequence-row">
+                <span class="sequence-actor">SP</span>
+                <span class="sequence-arrow">→</span>
+                <span class="sequence-actor">SP</span>
+                <span class="sequence-detail">検証・セッション作成</span>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <h3>OIDC-like シーケンス</h3>
+            <div class="sequence-diagram">
+              <div class="sequence-row">
+                <span class="sequence-actor">SP</span>
+                <span class="sequence-arrow">→</span>
+                <span class="sequence-actor">IdP</span>
+                <span class="sequence-detail">/authorize リクエスト</span>
+              </div>
+              <div class="sequence-row">
+                <span class="sequence-actor">IdP</span>
+                <span class="sequence-arrow">→</span>
+                <span class="sequence-actor">ユーザー</span>
+                <span class="sequence-detail">認証・同意</span>
+              </div>
+              <div class="sequence-row">
+                <span class="sequence-actor">IdP</span>
+                <span class="sequence-arrow">→</span>
+                <span class="sequence-actor">SP</span>
+                <span class="sequence-detail">認可コードを返却</span>
+              </div>
+              <div class="sequence-row">
+                <span class="sequence-actor">SP</span>
+                <span class="sequence-arrow">→</span>
+                <span class="sequence-actor">IdP</span>
+                <span class="sequence-detail">コード検証・Token交換</span>
+              </div>
+              <div class="sequence-row">
+                <span class="sequence-actor">SP</span>
+                <span class="sequence-arrow">→</span>
+                <span class="sequence-actor">SP</span>
+                <span class="sequence-detail">ID Token検証・セッション作成</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
         <h2>このデモでできること</h2>
         <div class="card-grid">
           <div class="card">

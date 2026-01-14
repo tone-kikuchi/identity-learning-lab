@@ -98,6 +98,82 @@ h1, h2, h3 {
   color: var(--muted);
 }
 
+.sequence-diagram {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.sequence-row {
+  display: grid;
+  grid-template-columns: minmax(80px, 1fr) auto minmax(80px, 1fr) minmax(160px, 2fr);
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #f8f9ff;
+  font-size: 13px;
+}
+
+.sequence-actor {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.sequence-arrow {
+  font-weight: 700;
+  color: var(--accent);
+  text-align: center;
+}
+
+.sequence-detail {
+  color: var(--muted);
+}
+
+.login-hero {
+  margin: 16px 0;
+}
+
+.login-hero-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.login-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+}
+
+.login-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.login-tag {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .button {
   display: inline-flex;
   align-items: center;

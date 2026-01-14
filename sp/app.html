@@ -10,6 +10,7 @@
     <main>
       <h1>保護ページ</h1>
       <p class="muted">ログイン済みのユーザーのみ表示されるページです。</p>
+      <div class="login-hero" id="loginHero"></div>
       <div class="card" id="sessionCard"></div>
       <div class="stack">
         <button class="button danger" id="logoutButton">ログアウト</button>
@@ -18,7 +19,7 @@
       <div class="card" id="flowSummary"></div>
     </main>
     <script type="module">
-      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage, requireDemo, applyDemoLinks, buildUrl } from '../shared/ui.js';
+      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage, requireDemo, applyDemoLinks, buildUrl, getUserProfilePresentation } from '../shared/ui.js';
       import { getJson, setJson, ensureDemoSeed, appendLog } from '../shared/storage.js';
 
       const init = () => {
@@ -38,6 +39,24 @@
 
       if (!session) {
         window.location.href = buildUrl('sp/index.html', { basePath: '..', demo });
+      }
+
+      const { displayName, handle, groups, icon } = getUserProfilePresentation(session);
+      const loginHero = document.getElementById('loginHero');
+      const groupTags = Array.isArray(groups) && groups.length
+        ? groups.map((group) => `<span class="login-tag">${group}</span>`).join('')
+        : '<span class="muted">所属グループ: なし</span>';
+      if (loginHero) {
+        loginHero.innerHTML = `
+          <div class="login-hero-card">
+            <div class="login-avatar" aria-hidden="true">${icon}</div>
+            <div>
+              <h2>${displayName} さんでログイン中</h2>
+              ${handle ? `<p class="muted">ID: ${handle}</p>` : ''}
+              <div class="login-tags">${groupTags}</div>
+            </div>
+          </div>
+        `;
       }
 
       document.getElementById('sessionCard').innerHTML = `
