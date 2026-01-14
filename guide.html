@@ -3,20 +3,60 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SAMLガイド</title>
+    <title>SAML / OIDCガイド</title>
     <link rel="stylesheet" href="./assets/style.css" />
   </head>
   <body>
     <main>
-      <h1>SAMLプロトコルとこのデモの見どころ</h1>
+      <h1>SAML / OIDCの詳細ガイドとこのデモの見どころ</h1>
       <p class="muted">
-        SAML（Security Assertion Markup Language）は、IdPとSPの間で認証情報をやり取りするための標準規格です。
-        このデモではSAMLを簡略化したSAML-likeフローを、ブラウザだけで追体験できます。
+        このページでは、SAMLとOIDC（OpenID Connect）の基本から違いまでを整理しつつ、
+        このデモで体験できるSAML-like / OIDC-likeフローの全体像をわかりやすく紹介します。
       </p>
 
       <div class="card-grid">
         <div class="card">
-          <h2>登場人物（役割）</h2>
+          <h2>🧩 SAMLとは</h2>
+          <p>
+            SAML（Security Assertion Markup Language）は、<strong>IdPが発行するアサーション</strong>をSPに渡し、
+            ユーザーの認証結果や属性を伝えるための標準規格です。XMLベースで、企業間SSOで広く使われます。
+          </p>
+          <ul>
+            <li><strong>主役のメッセージ</strong>: SAML Response / Assertion</li>
+            <li><strong>得意な場面</strong>: 企業内システムやSaaSとのSSO連携</li>
+            <li><strong>よく出てくる単語</strong>: AuthnRequest, ACS, 署名, 証明書</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h2>🔐 OIDCとは</h2>
+          <p>
+            OIDC（OpenID Connect）は、OAuth 2.0を土台にした<strong>認証の拡張仕様</strong>です。
+            認可コードを使ってID Tokenを取得し、ユーザーのログインを確認します。
+          </p>
+          <ul>
+            <li><strong>主役のメッセージ</strong>: Authorization Code / ID Token / Access Token</li>
+            <li><strong>得意な場面</strong>: モバイル/SPAなどモダンなアプリ連携</li>
+            <li><strong>よく出てくる単語</strong>: /authorize, /token, scope, claims</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h2>🔎 SAMLとOIDCの違い</h2>
+          <ul>
+            <li><strong>データ形式</strong>: SAMLはXML、OIDCはJSON + JWT</li>
+            <li><strong>トークン取得</strong>: SAMLはレスポンス一括、OIDCはコード交換</li>
+            <li><strong>適用領域</strong>: SAMLは企業向けSSO、OIDCはAPIやモバイルにも強い</li>
+            <li><strong>設計思想</strong>: SAMLはフェデレーション、OIDCはOAuthを拡張</li>
+          </ul>
+          <p class="muted">
+            どちらも「IdPが認証し、SPがログインを成立させる」という点は同じですが、
+            メッセージの形式・交換方法・利用シーンに違いがあります。
+          </p>
+        </div>
+      </div>
+
+      <div class="card-grid">
+        <div class="card">
+          <h2>👥 登場人物（役割）</h2>
           <ul>
             <li><strong>IdP</strong>: ユーザー認証を行い、SAMLアサーションを発行</li>
             <li><strong>SP</strong>: 受け取ったアサーションを検証してログインを成立</li>
@@ -24,7 +64,7 @@
           </ul>
         </div>
         <div class="card">
-          <h2>代表的な要素</h2>
+          <h2>🧰 代表的な要素</h2>
           <ul>
             <li><span class="inline-code">AuthnRequest</span>: SPからIdPへの認証要求</li>
             <li><span class="inline-code">SAML Response</span>: IdPからSPへの応答</li>
@@ -33,7 +73,7 @@
           </ul>
         </div>
         <div class="card">
-          <h2>フローの概要</h2>
+          <h2>🧭 フローの概要</h2>
           <ol>
             <li>SPがログイン開始（AuthnRequest送信）</li>
             <li>IdPでユーザー認証</li>
@@ -44,7 +84,7 @@
       </div>
 
       <div class="card">
-        <h2>シーケンス図で見る流れ</h2>
+        <h2>🧵 シーケンス図で見る流れ</h2>
         <p class="muted">SAML-likeとOIDC-likeそれぞれの主要なメッセージのやり取りを簡略化して示しています。</p>
         <div class="card-grid">
           <div class="card">
@@ -115,7 +155,7 @@
       </div>
 
       <div class="card">
-        <h2>このデモでできること</h2>
+        <h2>✨ このデモでできること</h2>
         <div class="card-grid">
           <div class="card">
             <h3>設定の理解</h3>
@@ -138,6 +178,13 @@
             </p>
           </div>
           <div class="card">
+            <h3>トークンの中身</h3>
+            <p>
+              OIDC-likeフローで受け取るID TokenやAccess Tokenの内容を確認し、
+              claimsがどのように表現されるかを学べます。
+            </p>
+          </div>
+          <div class="card">
             <h3>検証のポイント</h3>
             <p>
               SP側で署名や有効期限などの検証結果を確認し、
@@ -148,7 +195,7 @@
       </div>
 
       <div class="card">
-        <h2>おすすめの進め方</h2>
+        <h2>🚀 おすすめの進め方</h2>
         <ol>
           <li>SAML-likeデモ入口で初期化</li>
           <li>Adminでアプリ設定を確認</li>
@@ -163,8 +210,8 @@
       </div>
 
       <div class="notice">
-        <strong>注意:</strong> 本デモは学習用にSAMLを簡略化した実装です。実際のSAML運用では暗号署名、
-        証明書、リプレイ攻撃対策などの詳細な検証が必要になります。
+        <strong>注意:</strong> 本デモは学習用にSAML/OIDCを簡略化した実装です。実際の運用では暗号署名や
+        証明書、リプレイ攻撃対策、PKCEなどの詳細な検証が必要になります。
       </div>
     </main>
     <script type="module">
