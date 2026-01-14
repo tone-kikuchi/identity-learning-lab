@@ -18,12 +18,13 @@
       import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage, requireDemo, buildUrl } from '../shared/ui.js';
       import { getJson, getSessionJson, setSessionJson, setJson, ensureDemoSeed, appendLog } from '../shared/storage.js';
 
-      const demo = requireDemo({ basePath: '..' });
-      renderHeader({ activeRole: 'sp', basePath: '..', demo });
-      if (!demo) {
-        return;
-      }
-      ensureDemoSeed(demo);
+      const init = () => {
+        const demo = requireDemo({ basePath: '..' });
+        renderHeader({ activeRole: 'sp', basePath: '..', demo });
+        if (!demo) {
+          return;
+        }
+        ensureDemoSeed(demo);
 
       const params = new URLSearchParams(window.location.search);
       const received = {
@@ -182,6 +183,9 @@
       const stepBar = renderStepBar('oidc', 4);
       document.querySelector('main').insertBefore(stepBar, inputCard);
       document.querySelector('main').appendChild(panel);
+      };
+
+      init();
     </script>
   </body>
 </html>

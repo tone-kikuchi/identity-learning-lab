@@ -19,12 +19,13 @@
       import { getJson, getSessionJson, setJson, ensureDemoSeed, appendLog } from '../shared/storage.js';
       import { verifySamlLikeResponse } from '../shared/protocol_saml_like.js';
 
-      const demo = requireDemo({ basePath: '..' });
-      renderHeader({ activeRole: 'sp', basePath: '..', demo });
-      if (!demo) {
-        return;
-      }
-      ensureDemoSeed(demo);
+      const init = () => {
+        const demo = requireDemo({ basePath: '..' });
+        renderHeader({ activeRole: 'sp', basePath: '..', demo });
+        if (!demo) {
+          return;
+        }
+        ensureDemoSeed(demo);
 
       const inputCard = document.getElementById('inputCard');
       const payloadCard = document.getElementById('payloadCard');
@@ -115,6 +116,9 @@
       };
 
       runValidation();
+      };
+
+      init();
     </script>
   </body>
 </html>

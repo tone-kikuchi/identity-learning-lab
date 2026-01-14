@@ -36,13 +36,14 @@
       import { getJson, getSessionJson, setSessionJson, ensureDemoSeed, appendLog } from '../shared/storage.js';
       import { randomId } from '../shared/crypto.js';
 
-      const basePath = '..';
-      const demo = requireDemo({ basePath });
-      renderHeader({ activeRole: 'sp', basePath, demo });
-      if (!demo) {
-        return;
-      }
-      ensureDemoSeed(demo);
+      const init = () => {
+        const basePath = '..';
+        const demo = requireDemo({ basePath });
+        renderHeader({ activeRole: 'sp', basePath, demo });
+        if (!demo) {
+          return;
+        }
+        ensureDemoSeed(demo);
 
       const params = new URLSearchParams(window.location.search);
       const appId = params.get('appId');
@@ -128,6 +129,9 @@
       const stepBar = renderStepBar('oidc', 0);
       document.querySelector('main').insertBefore(stepBar, document.querySelector('main').children[2]);
       document.querySelector('main').appendChild(panel);
+      };
+
+      init();
     </script>
   </body>
 </html>

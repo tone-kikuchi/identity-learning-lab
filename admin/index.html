@@ -21,13 +21,14 @@
       import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage, requireDemo, applyDemoLinks } from '../shared/ui.js';
       import { getJson, ensureDemoSeed, appendLog } from '../shared/storage.js';
 
-      const demo = requireDemo({ basePath: '..' });
-      renderHeader({ activeRole: 'admin', basePath: '..', demo });
-      if (!demo) {
-        return;
-      }
-      applyDemoLinks(demo, { basePath: '..' });
-      ensureDemoSeed(demo);
+      const init = () => {
+        const demo = requireDemo({ basePath: '..' });
+        renderHeader({ activeRole: 'admin', basePath: '..', demo });
+        if (!demo) {
+          return;
+        }
+        applyDemoLinks(demo, { basePath: '..' });
+        ensureDemoSeed(demo);
 
       const apps = getJson(demo, 'apps', []);
       const samlApp = apps.find((item) => item.mode === 'saml_like');
@@ -74,6 +75,9 @@
       const stepBar = renderStepBar(demo, 0);
       document.querySelector('main').insertBefore(stepBar, summary);
       document.querySelector('main').appendChild(panel);
+      };
+
+      init();
     </script>
   </body>
 </html>
