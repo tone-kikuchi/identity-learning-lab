@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { getUserProfilePresentation } from '../../shared/ui.js';
+import { JSDOM } from 'jsdom';
+
+import { getUserProfilePresentation, renderLearningNav } from '../../shared/ui.js';
 
 test('getUserProfilePresentation prioritizes display data and group icon', () => {
   const result = getUserProfilePresentation({
@@ -24,4 +26,29 @@ test('getUserProfilePresentation falls back to user identifiers', () => {
   assert.equal(result.displayName, 'guest@example.com');
   assert.equal(result.handle, 'guest@example.com');
   assert.equal(result.icon, '👤');
+});
+
+test('renderLearningNav highlights current step and builds next link', () => {
+  const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'https://example.com' });
+  const previousDocument = globalThis.document;
+  const previousWindow = globalThis.window;
+  globalThis.document = dom.window.document;
+  globalThis.window = dom.window;
+
+  try {
+    const nav = renderLearningNav({
+      demo: 'saml',
+      currentStep: 'admin',
+      nextUrl: 'admin/index.html',
+      basePath: '..'
+    });
+    const activeStep = nav.querySelector('.learning-step.active .learning-step-label');
+    assert.equal(activeStep?.textContent, '管理設定');
+    const nextLink = nav.querySelector('a.button');
+    assert.ok(nextLink);
+    assert.ok(nextLink.getAttribute('href')?.includes('demo=saml'));
+  } finally {
+    globalThis.document = previousDocument;
+    globalThis.window = previousWindow;
+  }
 });

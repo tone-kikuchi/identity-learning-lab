@@ -20,7 +20,7 @@
       </form>
     </main>
     <script type="module">
-      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage, requireDemo, buildUrl } from '../shared/ui.js';
+      import { renderHeader, renderLearningNav, renderLearningPanel, snapshotStorage, requireDemo, buildUrl } from '../shared/ui.js';
       import { appendLog, getJson, getSessionJson, setSessionJson, ensureDemoSeed } from '../shared/storage.js';
 
       const init = () => {
@@ -75,8 +75,12 @@
         storageSnapshot: snapshotStorage(demo),
         logs: snapshotStorage(demo).eventLog
       });
-      const stepBar = renderStepBar('saml', 4);
-      document.querySelector('main').insertBefore(stepBar, document.querySelector('main').children[2]);
+      const learningNav = renderLearningNav({
+        demo,
+        currentStep: 'validate',
+        basePath: '..'
+      });
+      document.querySelector('main').insertBefore(learningNav, document.querySelector('main').children[2]);
       document.querySelector('main').appendChild(panel);
       };
 

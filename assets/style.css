@@ -239,6 +239,84 @@ label {
   color: white;
 }
 
+.learning-nav {
+  display: grid;
+  gap: 16px;
+  margin: 16px 0 24px;
+}
+
+.learning-nav-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.learning-nav-title {
+  font-weight: 700;
+  margin: 0;
+}
+
+.learning-nav-subtitle {
+  margin: 4px 0 0;
+}
+
+.learning-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.learning-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #f1f4ff;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.learning-step-number {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(59, 92, 204, 0.2);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.learning-step.active {
+  background: var(--accent);
+  color: white;
+}
+
+.learning-step.active .learning-step-number {
+  background: white;
+  color: var(--accent);
+}
+
+.learning-step.complete {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.toast {
+  position: sticky;
+  top: 72px;
+  z-index: 5;
+}
+
+.preview-card {
+  border-style: dashed;
+}
+
 .learning-panel {
   background: var(--card);
   border: 1px solid var(--border);

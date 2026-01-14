@@ -19,7 +19,7 @@
       <div class="card" id="flowSummary"></div>
     </main>
     <script type="module">
-      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage, requireDemo, applyDemoLinks, buildUrl, getUserProfilePresentation } from '../shared/ui.js';
+      import { renderHeader, renderLearningNav, renderLearningPanel, snapshotStorage, requireDemo, applyDemoLinks, buildUrl, getUserProfilePresentation } from '../shared/ui.js';
       import { getJson, setJson, ensureDemoSeed, appendLog } from '../shared/storage.js';
 
       const init = () => {
@@ -108,8 +108,12 @@
         storageSnapshot: snapshotStorage(demo),
         logs: snapshotStorage(demo).eventLog
       });
-      const stepBar = renderStepBar(app?.mode === 'oidc_like' ? 'oidc' : 'saml', 5);
-      document.querySelector('main').insertBefore(stepBar, document.querySelector('main').children[2]);
+      const learningNav = renderLearningNav({
+        demo,
+        currentStep: 'session',
+        basePath: '..'
+      });
+      document.querySelector('main').insertBefore(learningNav, document.querySelector('main').children[2]);
       document.querySelector('main').appendChild(panel);
       };
 

@@ -15,7 +15,7 @@
       <div class="stack" id="actionStack"></div>
     </main>
     <script type="module">
-      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage, requireDemo, buildUrl } from '../shared/ui.js';
+      import { renderHeader, renderLearningNav, renderLearningPanel, snapshotStorage, requireDemo, buildUrl } from '../shared/ui.js';
       import { getJson, setJson, ensureDemoSeed, appendLog } from '../shared/storage.js';
 
       const init = () => {
@@ -110,8 +110,12 @@
         storageSnapshot: snapshotStorage(demo),
         logs: snapshotStorage(demo).eventLog
       });
-      const stepBar = renderStepBar(demo, 0);
-      document.querySelector('main').insertBefore(stepBar, sessionCard);
+      const learningNav = renderLearningNav({
+        demo,
+        currentStep: 'session',
+        basePath: '..'
+      });
+      document.querySelector('main').insertBefore(learningNav, sessionCard);
       document.querySelector('main').appendChild(panel);
       };
 

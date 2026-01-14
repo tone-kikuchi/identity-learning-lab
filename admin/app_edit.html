@@ -10,9 +10,10 @@
     <main>
       <h1>アプリ設定</h1>
       <p class="muted">選択中のデモの設定を学習用に編集します。</p>
-      <div class="notice" id="saveMessage" role="status" aria-live="polite" hidden></div>
+      <div class="notice toast" id="saveMessage" role="status" aria-live="polite" hidden></div>
       <form class="card form-grid" id="samlForm">
         <h2>SAML-like 設定</h2>
+        <p class="muted">SPとIdPの照合に必要な値を定義します。</p>
         <label>
           Name
           <input type="text" name="name" required />
@@ -20,22 +21,33 @@
         <label>
           SP Entity ID (Audience)
           <input type="text" name="spEntityId" required />
-          <small class="muted">SAMLのAudience相当</small>
+          <small class="muted">Audience検証で利用します。</small>
         </label>
-        <label>
-          ACS URL (Recipient)
-          <input type="text" name="acsUrl" required />
-          <small class="muted">SAMLのRecipient相当</small>
-        </label>
-        <label>
-          Shared Secret
-          <input type="text" name="sharedSecret" required />
-          <small class="muted">証明書代わりの共有鍵（学習用）</small>
-        </label>
+        <details>
+          <summary>詳細設定</summary>
+          <div class="form-grid">
+            <label>
+              ACS URL (Recipient)
+              <input type="text" name="acsUrl" required />
+              <small class="muted">Recipient検証で利用します。</small>
+            </label>
+            <label>
+              Shared Secret
+              <input type="text" name="sharedSecret" required />
+              <small class="muted">署名検証の共有鍵として使います。</small>
+            </label>
+          </div>
+        </details>
+        <ul class="muted">
+          <li>SP Entity IDはAudienceチェックで使われます。</li>
+          <li>ACS URLはRecipientチェックで使われます。</li>
+          <li>Shared Secretは署名検証で一致確認されます。</li>
+        </ul>
         <button class="button" type="button" id="samlSaveButton">SAML設定を保存</button>
       </form>
       <form class="card form-grid" id="oidcForm">
         <h2>OIDC-like 設定</h2>
+        <p class="muted">OIDCフローの識別子と戻り先を管理します。</p>
         <label>
           Name
           <input type="text" name="name" required />
@@ -43,19 +55,29 @@
         <label>
           Client ID
           <input type="text" name="clientId" required />
-          <small class="muted">OIDCのclient_id相当</small>
+          <small class="muted">client_idとして照合されます。</small>
         </label>
-        <label>
-          Redirect URI
-          <input type="text" name="redirectUri" required />
-          <small class="muted">相対パスで指定 (例: ../sp/callback.html)</small>
-        </label>
+        <details>
+          <summary>詳細設定</summary>
+          <div class="form-grid">
+            <label>
+              Redirect URI
+              <input type="text" name="redirectUri" required />
+              <small class="muted">callbackの一致確認に使います。</small>
+            </label>
+          </div>
+        </details>
+        <ul class="muted">
+          <li>Client IDは認可要求の一致チェックで使われます。</li>
+          <li>Redirect URIはcallbackの受信先チェックで使われます。</li>
+        </ul>
         <button class="button" type="button" id="oidcSaveButton">OIDC設定を保存</button>
       </form>
+      <div class="card preview-card" id="savePreview" hidden></div>
       <a class="button secondary" data-demo-path="admin/index.html" href="./index.html">戻る</a>
     </main>
     <script type="module">
-      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage, applyDemoLinks } from '../shared/ui.js';
+      import { renderHeader, renderLearningNav, renderLearningPanel, snapshotStorage, applyDemoLinks } from '../shared/ui.js';
       import { getJson, setJson, ensureDemoSeed, appendLog, resolveDemoSelection } from '../shared/storage.js';
       import { randomId } from '../shared/crypto.js';
 
@@ -63,9 +85,14 @@
         const { demo, rawDemo } = resolveDemoSelection({ fallback: 'saml' });
         renderHeader({ activeRole: 'admin', basePath: '..', demo });
         const saveMessage = document.getElementById('saveMessage');
+        const savePreview = document.getElementById('savePreview');
+        let toastTimer = null;
         const setMessage = (text, variant = 'info') => {
           if (!saveMessage) {
             return;
+          }
+          if (toastTimer) {
+            clearTimeout(toastTimer);
           }
           saveMessage.textContent = text;
           saveMessage.hidden = false;
@@ -74,10 +101,16 @@
             saveMessage.classList.add(variant);
           }
           saveMessage.setAttribute('role', variant === 'error' ? 'alert' : 'status');
+          toastTimer = window.setTimeout(() => {
+            saveMessage.hidden = true;
+          }, 3000);
         };
         const clearMessage = () => {
           if (!saveMessage) {
             return;
+          }
+          if (toastTimer) {
+            clearTimeout(toastTimer);
           }
           saveMessage.hidden = true;
           saveMessage.textContent = '';
@@ -169,6 +202,34 @@
         }
         return savedApps.find((item) => item.mode === mode) || null;
       };
+      const renderPreview = (app, mode) => {
+        if (!savePreview) {
+          return;
+        }
+        if (!app) {
+          savePreview.hidden = true;
+          return;
+        }
+        savePreview.hidden = false;
+        savePreview.innerHTML = mode === 'saml'
+          ? `
+            <h2>保存内容プレビュー (SAML-like)</h2>
+            <table class="table">
+              <tr><th>Name</th><td>${app.name || '-'}</td></tr>
+              <tr><th>SP Entity ID</th><td>${app.spEntityId || '-'}</td></tr>
+              <tr><th>ACS URL</th><td>${app.acsUrl || '-'}</td></tr>
+              <tr><th>Shared Secret</th><td>${app.sharedSecret || '-'}</td></tr>
+            </table>
+          `
+          : `
+            <h2>保存内容プレビュー (OIDC-like)</h2>
+            <table class="table">
+              <tr><th>Name</th><td>${app.name || '-'}</td></tr>
+              <tr><th>Client ID</th><td>${app.clientId || '-'}</td></tr>
+              <tr><th>Redirect URI</th><td>${app.redirectUri || '-'}</td></tr>
+            </table>
+          `;
+      };
 
       const handleSamlSave = () => {
         clearMessage();
@@ -191,7 +252,8 @@
           }
           samlApp = savedApp;
           refreshSamlForm(savedApp);
-          setMessage('SAML設定を保存しました。', 'success');
+          renderPreview(savedApp, 'saml');
+          setMessage(`SAML設定を保存しました。(demo=${demo})`, 'success');
         } catch (error) {
           console.error('[app_edit] failed to save', error);
           setMessage('保存に失敗しました。入力内容を確認してください。', 'error');
@@ -219,7 +281,8 @@
           }
           oidcApp = savedApp;
           refreshOidcForm(savedApp);
-          setMessage('OIDC設定を保存しました。', 'success');
+          renderPreview(savedApp, 'oidc');
+          setMessage(`OIDC設定を保存しました。(demo=${demo})`, 'success');
         } catch (error) {
           console.error('[app_edit] failed to save', error);
           setMessage('保存に失敗しました。入力内容を確認してください。', 'error');
@@ -245,9 +308,16 @@
         storageSnapshot: snapshotStorage(demo),
         logs: snapshotStorage(demo).eventLog
       });
-      const stepBar = renderStepBar(demo, 0);
+      renderPreview(demo === 'saml' ? samlApp : oidcApp, demo);
+      const learningNav = renderLearningNav({
+        demo,
+        currentStep: 'admin',
+        nextUrl: demo === 'saml' ? 'sp/login_saml.html' : 'sp/login_oidc.html',
+        nextLabel: 'ログイン開始へ',
+        basePath: '..'
+      });
       const formAnchor = demo === 'saml' ? samlForm : oidcForm;
-      document.querySelector('main').insertBefore(stepBar, formAnchor);
+      document.querySelector('main').insertBefore(learningNav, formAnchor);
       document.querySelector('main').appendChild(panel);
       };
 

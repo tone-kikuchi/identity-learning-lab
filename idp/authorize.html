@@ -19,7 +19,7 @@
       <div class="card stack" id="codeCard"></div>
     </main>
     <script type="module">
-      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage, requireDemo, buildUrl } from '../shared/ui.js';
+      import { renderHeader, renderLearningNav, renderLearningPanel, snapshotStorage, requireDemo, buildUrl } from '../shared/ui.js';
       import { getJson, getSessionJson, setSessionJson, ensureDemoSeed, appendLog } from '../shared/storage.js';
       import { randomId } from '../shared/crypto.js';
 
@@ -163,8 +163,12 @@
         storageSnapshot: sessionSnapshot,
         logs: sessionSnapshot.eventLog
       });
-      const stepBar = renderStepBar('oidc', 3);
-      document.querySelector('main').insertBefore(stepBar, document.querySelector('main').children[2]);
+      const learningNav = renderLearningNav({
+        demo,
+        currentStep: 'idp',
+        basePath: '..'
+      });
+      document.querySelector('main').insertBefore(learningNav, document.querySelector('main').children[2]);
       document.querySelector('main').appendChild(panel);
       };
 

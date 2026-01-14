@@ -84,6 +84,54 @@ export function renderStepBar(flow, currentStepIndex) {
   return wrapper;
 }
 
+const LEARNING_NAV_STEPS = [
+  { id: 'entry', label: '入口' },
+  { id: 'seed', label: '初期化' },
+  { id: 'admin', label: '管理設定' },
+  { id: 'sp', label: 'ログイン開始' },
+  { id: 'idp', label: '認証/認可' },
+  { id: 'validate', label: '受信と検証' },
+  { id: 'session', label: 'セッション確認' }
+];
+
+export function renderLearningNav({
+  demo,
+  currentStep,
+  nextUrl,
+  nextLabel = '次へ',
+  basePath = '.'
+} = {}) {
+  const resolvedDemo = resolveDemo({ demo });
+  const wrapper = document.createElement('div');
+  wrapper.className = 'learning-nav card';
+  const currentIndex = LEARNING_NAV_STEPS.findIndex((step) => step.id === currentStep);
+  const stepItems = LEARNING_NAV_STEPS.map((step, index) => {
+    const state = index === currentIndex ? 'active' : index < currentIndex ? 'complete' : '';
+    return `
+      <div class="learning-step ${state}">
+        <span class="learning-step-number">${index + 1}</span>
+        <span class="learning-step-label">${step.label}</span>
+      </div>
+    `;
+  }).join('');
+  const nextLink = nextUrl
+    ? `<a class="button" href="${buildUrl(nextUrl, { basePath, demo: resolvedDemo })}">${nextLabel}</a>`
+    : '';
+  wrapper.innerHTML = `
+    <div class="learning-nav-header">
+      <div>
+        <p class="learning-nav-title">学習ナビ</p>
+        <p class="muted learning-nav-subtitle">現在地を確認しながら次のアクションへ進みましょう。</p>
+      </div>
+      ${nextLink}
+    </div>
+    <div class="learning-steps">
+      ${stepItems}
+    </div>
+  `;
+  return wrapper;
+}
+
 export function getUserProfilePresentation(session = {}) {
   const safeSession = session ?? {};
   const groups = Array.isArray(safeSession.groups) ? safeSession.groups : [];

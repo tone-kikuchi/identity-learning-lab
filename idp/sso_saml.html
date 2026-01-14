@@ -24,7 +24,7 @@
       </div>
     </main>
     <script type="module">
-      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage, requireDemo, buildUrl } from '../shared/ui.js';
+      import { renderHeader, renderLearningNav, renderLearningPanel, snapshotStorage, requireDemo, buildUrl } from '../shared/ui.js';
       import { getJson, setSessionJson, ensureDemoSeed, appendLog } from '../shared/storage.js';
       import { buildSamlLikeResponse } from '../shared/protocol_saml_like.js';
 
@@ -153,8 +153,12 @@
         storageSnapshot: snapshotStorage(demo),
         logs: snapshotStorage(demo).eventLog
       });
-      const stepBar = renderStepBar('saml', 3);
-      document.querySelector('main').insertBefore(stepBar, document.querySelector('main').children[2]);
+      const learningNav = renderLearningNav({
+        demo,
+        currentStep: 'idp',
+        basePath: '..'
+      });
+      document.querySelector('main').insertBefore(learningNav, document.querySelector('main').children[2]);
       document.querySelector('main').appendChild(panel);
       };
 
