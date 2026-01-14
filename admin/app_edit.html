@@ -59,41 +59,42 @@
       import { getJson, setJson, ensureDemoSeed, appendLog, resolveDemoSelection } from '../shared/storage.js';
       import { randomId } from '../shared/crypto.js';
 
-      const { demo, rawDemo } = resolveDemoSelection({ fallback: 'saml' });
-      renderHeader({ activeRole: 'admin', basePath: '..', demo });
-      const saveMessage = document.getElementById('saveMessage');
-      const setMessage = (text, variant = 'info') => {
-        if (!saveMessage) {
+      const init = () => {
+        const { demo, rawDemo } = resolveDemoSelection({ fallback: 'saml' });
+        renderHeader({ activeRole: 'admin', basePath: '..', demo });
+        const saveMessage = document.getElementById('saveMessage');
+        const setMessage = (text, variant = 'info') => {
+          if (!saveMessage) {
+            return;
+          }
+          saveMessage.textContent = text;
+          saveMessage.hidden = false;
+          saveMessage.classList.remove('success', 'error');
+          if (variant) {
+            saveMessage.classList.add(variant);
+          }
+          saveMessage.setAttribute('role', variant === 'error' ? 'alert' : 'status');
+        };
+        const clearMessage = () => {
+          if (!saveMessage) {
+            return;
+          }
+          saveMessage.hidden = true;
+          saveMessage.textContent = '';
+          saveMessage.classList.remove('success', 'error');
+          saveMessage.setAttribute('role', 'status');
+        };
+        const hasInvalidDemo = rawDemo && !demo;
+        if (hasInvalidDemo) {
+          setMessage('デモ指定が不正です。?demo=saml または ?demo=oidc を指定してください。', 'error');
           return;
         }
-        saveMessage.textContent = text;
-        saveMessage.hidden = false;
-        saveMessage.classList.remove('success', 'error');
-        if (variant) {
-          saveMessage.classList.add(variant);
-        }
-        saveMessage.setAttribute('role', variant === 'error' ? 'alert' : 'status');
-      };
-      const clearMessage = () => {
-        if (!saveMessage) {
+        if (!demo) {
+          setMessage('デモが未選択です。?demo=saml または ?demo=oidc を指定してください。', 'error');
           return;
         }
-        saveMessage.hidden = true;
-        saveMessage.textContent = '';
-        saveMessage.classList.remove('success', 'error');
-        saveMessage.setAttribute('role', 'status');
-      };
-      const hasInvalidDemo = rawDemo && !demo;
-      if (hasInvalidDemo) {
-        setMessage('デモ指定が不正です。?demo=saml または ?demo=oidc を指定してください。', 'error');
-        return;
-      }
-      if (!demo) {
-        setMessage('デモが未選択です。?demo=saml または ?demo=oidc を指定してください。', 'error');
-        return;
-      }
-      applyDemoLinks(demo, { basePath: '..' });
-      ensureDemoSeed(demo);
+        applyDemoLinks(demo, { basePath: '..' });
+        ensureDemoSeed(demo);
 
       const apps = getJson(demo, 'apps');
       const storedSamlApp = Array.isArray(apps) ? apps.find((item) => item.mode === 'saml_like') : null;
@@ -248,6 +249,9 @@
       const formAnchor = demo === 'saml' ? samlForm : oidcForm;
       document.querySelector('main').insertBefore(stepBar, formAnchor);
       document.querySelector('main').appendChild(panel);
+      };
+
+      init();
     </script>
   </body>
 </html>
