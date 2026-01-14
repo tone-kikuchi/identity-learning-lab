@@ -84,6 +84,26 @@ export function renderStepBar(flow, currentStepIndex) {
   return wrapper;
 }
 
+export function getUserProfilePresentation(session = {}) {
+  const safeSession = session ?? {};
+  const groups = Array.isArray(safeSession.groups) ? safeSession.groups : [];
+  const displayName = safeSession.displayName ||
+    safeSession.name ||
+    safeSession.username ||
+    safeSession.email ||
+    safeSession.sub ||
+    safeSession.userId ||
+    'ログインユーザー';
+  const handle = safeSession.username || safeSession.email || safeSession.sub || safeSession.userId || '';
+  const icon = selectUserIcon({ groups, displayName, handle });
+  return {
+    displayName,
+    handle,
+    groups,
+    icon
+  };
+}
+
 export function renderLearningPanel({
   purpose,
   params,
@@ -161,7 +181,63 @@ const PARAMETER_DESCRIPTIONS = {
   'user.id': 'ユーザID。',
   'user.username': 'ログイン名。',
   'user.displayName': '表示名。',
-  'user.groups': '所属グループ。'
+  'user.groups': '所属グループ。',
+  samlAppId: 'SAML-likeアプリを指すID。',
+  oidcAppId: 'OIDC-likeアプリを指すID。',
+  samlSession: 'SAML-likeのログイン済みセッション。',
+  oidcSession: 'OIDC-likeのログイン済みセッション。',
+  id: '識別子。',
+  name: '名称（アプリ名やユーザー名など）。',
+  mode: 'アプリの動作モード。',
+  acsUrl: 'SAMLのACS(Recipient)として使うURL。',
+  sharedSecret: 'SAMLレスポンス署名に使う共有鍵。',
+  clientId: 'OIDCクライアントの識別子。',
+  redirectUri: 'OIDCで戻り先として許可するURI。',
+  response_type: 'OIDCのレスポンスタイプ（codeなど）。',
+  scope: 'OIDCのスコープ指定。',
+  client_id: 'OIDCクライアントID（リクエスト値）。',
+  redirect_uri: 'OIDCのredirect_uriパラメータ。',
+  state: 'CSRF対策のstateパラメータ。',
+  nonce: 'ID Tokenのリプレイ対策用nonce。',
+  code: 'OIDCの認可コード。',
+  app: '対象アプリの設定情報。',
+  'app.id': 'アプリの識別子。',
+  'app.name': 'アプリ名。',
+  'app.mode': 'アプリの動作モード。',
+  'app.spEntityId': 'SAML用のSP Entity ID。',
+  'app.acsUrl': 'SAML用のACS URL。',
+  'app.sharedSecret': 'SAML用共有シークレット。',
+  'app.clientId': 'OIDC用のClient ID。',
+  'app.redirectUri': 'OIDC用のRedirect URI。',
+  samlApp: 'SAML-likeのアプリ設定。',
+  oidcApp: 'OIDC-likeのアプリ設定。',
+  returnTo: 'ログイン後に戻る先のURL。',
+  selectedUserId: 'IdPで選択されたユーザーID。',
+  createdAt: '値を生成した時刻。',
+  loginAt: 'ログインが成立した時刻。',
+  sub: 'ユーザー識別子(sub)。',
+  email: 'ユーザーのメールアドレス。',
+  userId: 'ユーザー識別子。',
+  username: 'ログイン名。',
+  displayName: '表示名。',
+  groups: '所属グループ。',
+  idToken: 'OIDC-likeで発行したID Token。',
+  'idToken.iss': 'ID Tokenの発行者。',
+  'idToken.aud': 'ID TokenのAudience。',
+  'idToken.iat': 'ID Tokenの発行時刻。',
+  'idToken.exp': 'ID Tokenの有効期限。',
+  'idToken.nonce': 'ID Tokenのnonce。',
+  'idToken.sub': 'ID Tokenのsubject。',
+  'idToken.email': 'ID Tokenに含まれるメールアドレス。',
+  'idToken.name': 'ID Tokenに含まれる表示名。',
+  'idToken.groups': 'ID Tokenに含まれるグループ情報。',
+  'received.code': 'redirectで返ってきた認可コード。',
+  'received.state': 'redirectで返ってきたstate。',
+  'received.appId': 'redirectで返ってきたアプリID。',
+  'expected.state': '送信時に保存したstate。',
+  'expected.nonce': '送信時に保存したnonce。',
+  'expected.appId': '送信時に保存したアプリID。',
+  'expected.createdAt': 'state/nonceを保存した時刻。'
 };
 
 const VALIDATION_DESCRIPTIONS = {
@@ -172,8 +248,45 @@ const VALIDATION_DESCRIPTIONS = {
   aud一致: 'AudienceがSPのエンティティIDと一致するかを確認。',
   recipient一致: 'レスポンス送信先(ACS URL)が一致するかを確認。',
   exp未期限切れ: '有効期限(exp)が現在時刻より後かを確認。',
-  sig検証: '共有シークレットで署名(HMAC)が一致するかを確認。'
+  sig検証: '共有シークレットで署名(HMAC)が一致するかを確認。',
+  OIDCアプリ存在: 'OIDCアプリ設定が存在するかを確認。',
+  client_id一致: 'client_idがアプリ設定と一致するかを確認。',
+  redirect_uri一致: 'redirect_uriが登録値と一致するかを確認。',
+  'response_type=code': 'response_typeがcodeかを確認。',
+  'scope=openid': 'scopeにopenidが含まれるかを確認。',
+  state一致: 'stateが保存値と一致するかを確認。',
+  code存在: '認可コードが存在するかを確認。',
+  code未使用: '認可コードが未使用かを確認。',
+  code期限内: '認可コードの有効期限内かを確認。',
+  nonce一致: 'nonceが保存値と一致するかを確認。'
 };
+
+function selectUserIcon({ groups = [], displayName = '', handle = '' } = {}) {
+  const normalizedGroups = Array.isArray(groups) ? groups.map((group) => group.toLowerCase()) : [];
+  if (normalizedGroups.includes('engineering')) {
+    return '🛠️';
+  }
+  if (normalizedGroups.includes('sales')) {
+    return '📈';
+  }
+  if (normalizedGroups.includes('security')) {
+    return '🛡️';
+  }
+  if (normalizedGroups.includes('design')) {
+    return '🎨';
+  }
+  if (normalizedGroups.includes('marketing')) {
+    return '💬';
+  }
+  const combined = `${displayName} ${handle}`.toLowerCase();
+  if (combined.includes('alice')) {
+    return '🧑‍💻';
+  }
+  if (combined.includes('bob')) {
+    return '🧑‍💼';
+  }
+  return '👤';
+}
 
 function formatJson(value) {
   if (!value) {
