@@ -18,7 +18,7 @@
       </div>
     </main>
     <script type="module">
-      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage, requireDemo, applyDemoLinks } from '../shared/ui.js';
+      import { renderHeader, renderLearningNav, renderLearningPanel, snapshotStorage, requireDemo, applyDemoLinks } from '../shared/ui.js';
       import { getJson, ensureDemoSeed, appendLog } from '../shared/storage.js';
 
       const init = () => {
@@ -72,8 +72,13 @@
         storageSnapshot: snapshotStorage(demo),
         logs: snapshotStorage(demo).eventLog
       });
-      const stepBar = renderStepBar(demo, 0);
-      document.querySelector('main').insertBefore(stepBar, summary);
+      const learningNav = renderLearningNav({
+        demo,
+        currentStep: 'admin',
+        nextUrl: 'admin/app_edit.html',
+        basePath: '..'
+      });
+      document.querySelector('main').insertBefore(learningNav, summary);
       document.querySelector('main').appendChild(panel);
       };
 

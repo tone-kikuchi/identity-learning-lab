@@ -15,7 +15,7 @@
       <div class="card stack" id="resultCard"></div>
     </main>
     <script type="module">
-      import { renderHeader, renderStepBar, renderLearningPanel, snapshotStorage, requireDemo, buildUrl } from '../shared/ui.js';
+      import { renderHeader, renderLearningNav, renderLearningPanel, snapshotStorage, requireDemo, buildUrl } from '../shared/ui.js';
       import { getJson, getSessionJson, setJson, ensureDemoSeed, appendLog } from '../shared/storage.js';
       import { verifySamlLikeResponse } from '../shared/protocol_saml_like.js';
 
@@ -110,8 +110,12 @@
           storageSnapshot: snapshotStorage(demo),
           logs: snapshotStorage(demo).eventLog
         });
-        const stepBar = renderStepBar('saml', 4);
-        document.querySelector('main').insertBefore(stepBar, inputCard);
+        const learningNav = renderLearningNav({
+          demo,
+          currentStep: 'validate',
+          basePath: '..'
+        });
+        document.querySelector('main').insertBefore(learningNav, inputCard);
         document.querySelector('main').appendChild(panel);
       };
 
